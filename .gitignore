@@ -1,0 +1,10 @@
+__pycache__/
+logs/
+deprecated/
+*.py[cod]
+*.log
+*humbs.db
+db/
+calibrations/
+manual/
+extras/
