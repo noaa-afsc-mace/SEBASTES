@@ -81,7 +81,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.metadataStickyBox.setEnabled(False)
         self.metadataTypesDict={}
         self.recordEnableWidgets=[self.recomputeBtn,self.trainBtn,self.measureBtn, self.measureScBtn, self.rangeBtn,self.linkBtn , self.targetCommentBtn, self.frameCommentBtn, 
-                            self.computeMatchBox, self.matchThresholdEdit, self.stereoOnlyCheckBox, self.showDataCheck, self.editSpeciesBtn, self.gridCheck,  self.clearGridBtn,  self.delLinkBtn]
+                            self.computeMatchBox, self.matchThresholdEdit, self.stereoOnlyCheckBox, self.showDataCheck, self.editSpeciesBtn, self.gridCheck,  self.clearGridBtn,  self.delLinkBtn, self.lastFrameBtn]
         self.bboxEnableWidgets=[self.recomputeBtn,self.measureBtn, self.measureScBtn, self.rangeBtn,self.linkBtn, 
                             self.computeMatchBox, self.matchThresholdEdit, self.stereoOnlyCheckBox, self.showDataCheck]
 
@@ -130,6 +130,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             btn.pressed.connect(self.btnPress)
             btn.released.connect(self.btnRelease)
             cnt+=1
+        self.pressTime=QTime()
+        self.pressTime.start()
         
         self.recomputeBtn.clicked.connect(self.recompute3D)
         self.recordBtn.clicked.connect(self.toggleRecord)
@@ -144,6 +146,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.frameCommentBtn.clicked.connect(self.getFrameComment)
         self.clearGridBtn.clicked.connect(self.clearGridData)
         self.editSpeciesBtn.clicked.connect(self.editSpecies)
+        self.lastFrameBtn.clicked.connect(self.goToLastFrame)
         
         # docking widgets
         self.metadataDockWidget.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
@@ -174,6 +177,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.actionCreate_New_Project.triggered.connect(self.createNewProject)
         self.playSpeedSlider.valueChanged.connect(self.speedSet)
         self.imageSlider.valueChanged.connect( self.__changeImage)
+        
 
         self.adjLeftBtn.clicked.connect(self.showAdjustmentsDialog)
         self.adjRightBtn.clicked.connect(self.showAdjustmentsDialog)
@@ -259,6 +263,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.closeup.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.closeup.closeWindowEvent.connect(self.uncheckCloseupWindowBox)
         position = self.appSettings.value('zoomwinposition', QPoint(10,10))
+        self.spcSelDlg=speciesgroupdlg.SpeciesGroupDlg(self)
+        
 
        #self.closeup.move(position)
 
@@ -340,6 +346,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         if self.activeProfile==None:
             dlg.reloadBtn.hide()
         dlg.exec_()
+        if dlg.reloadFlag:
+            self.loadProfile()
                 
     def setActiveProfiles(self):
         
@@ -359,6 +367,31 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         if dlg.exec_():
             pass
     
+    def setupSpcBtns(self):
+            # species
+            self.speciesList=[]
+            self.speciesDescList=[]
+            self.spcColors=[]
+            query=self.appDB.dbQuery("SELECT species_group, button_color, description FROM SPECIES_SETUP WHERE species_collection='"+self.speciesCollection+"' ORDER BY sort_order NULLS LAST, species_group")
+            cnt=0
+            for spc, color,  desc in query:
+                self.speciesList.append(spc)
+                self.speciesDescList.append(desc)
+                val=color.split(',')
+                self.spcColors.append([int(val[0]), int(val[1]), int(val[2])])
+                # add names to buttons
+                if cnt<len(self.spcButtons):
+                    btn=self.spcButtons[cnt]
+                    btn.setEnabled(True)
+                    btn.setText(self.speciesList[cnt])
+                    btn.setToolTip(self.speciesDescList[cnt])
+                    if color=='':
+                        rgb='255,255,0'
+                    else:
+                        rgb=color
+                    btn.setStyleSheet("QPushButton { background-color: rgb("+rgb+")}")
+                cnt+=1
+    
     def loadProfile(self):
         try:
             # settings
@@ -367,37 +400,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             for parameter, value in query:
                 self.settings.update({parameter:value})
 
-            # species
-            self.speciesList=[]
-            self.speciesDescList=[]
-            self.spcColors=[]
-            query=self.appDB.dbQuery("SELECT species_group, button_color, description FROM SPECIES_SETUP WHERE species_collection='"+self.speciesCollection+"' ORDER BY sort_order NULLS LAST, species_group")
-            for spc, color,  desc in query:
-                self.speciesList.append(spc)
-                self.speciesDescList.append(desc)
-                if color!='':
-                    val1=color.split(',')
-                    rgb=[int(val1[0]), int(val1[1]), int(val1[2])]
-                    self.spcColors.append(rgb)
-                else:
-                    self.spcColors.append(None)
+            self.setupSpcBtns()
+            self.spcSelDlg.setList(self.speciesList)
 
-            # populate buttons
-            cnt=0
-            for btn in self.spcButtons:
-                if cnt<len(self.speciesList):
-                    btn.setText(self.speciesList[cnt])
-                    btn.setToolTip(self.speciesDescList[cnt])
-                    btn.setEnabled(True)
-                    if cnt<len(self.spcColors):
-                        btn.setStyleSheet("QPushButton { background-color: rgb("+str(self.spcColors[cnt][0])+","+str(self.spcColors[cnt][1])+","+str(self.spcColors[cnt][2])+")}")
-                    else:
-                        btn.setStyleSheet("QPushButton { background-color: rgb(255,255,0)}")
-                        self.spcColors.append([255, 255, 0])
-                else:
-                    btn.setText('')
-                    btn.setEnabled(False)
-                cnt+=1
+
             # populate metadata
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
                 self.metadataDockWidget.setWindowTitle(self.metadataGroup)
@@ -1080,28 +1086,33 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 #####################4. UI FUNCTIONS########################################
 
     def btnPress(self):
-        self.pressTime=QTime()
-        self.pressTime.start()
-        if self.sender() in self.spcButtons:
-            templist=list(self.spcButtons)
-            templist.remove(self.sender())
-        for btn in templist:
-            btn.setChecked(False)
+        if self.pressTime.elapsed()<250:# user double clicked
+            if self.spcSelDlg.exec_() and self.spcSelDlg.listWidget.currentIndex().row()>-1:
+                new_spc=self.spcSelDlg.listWidget.currentItem().text()
+                # check to see if it is already in the button list
+                ind=self.speciesList.index(new_spc)
+                if ind<len(self.spcButtons):# new species is already attached to a button
+                    # switch sort orders
+                    old_sort=str(ind+1)
+                else:# new species is coming in hot
+                    old_sort="NULL"
+                    
+                btn=self.sender()
+                old_spc=btn.text()
+                new_sort=str(self.spcButtons.index(btn)+1)
+                # update db
+                self.appDB.dbExec("UPDATE SPECIES_SETUP SET sort_order="+old_sort+" WHERE species_group='"+old_spc+"'")
+                self.appDB.dbExec("UPDATE SPECIES_SETUP SET sort_order="+new_sort+" WHERE species_group='"+new_spc+"'")
+                self.setupSpcBtns()
+        else:
+            self.pressTime.start()
+            if self.sender() in self.spcButtons:
+                templist=list(self.spcButtons)
+                templist.remove(self.sender())
+            for btn in templist:
+                btn.setChecked(False)
 
     def btnRelease(self):
-        if self.pressTime.elapsed()>2000:
-            dlg=speciesgroupdlg.SpeciesGroupDlg(self)
-            dlg.setList(self.speciesList)
-            if dlg.exec_() and dlg.listWidget.currentIndex().row()>-1:
-                spc=dlg.listWidget.currentItem().text()
-                # get the species color
-                query=self.appDB.dbQuery("SELECT button_color FROM SPECIES_SETUP WHERE species_collection='"+self.speciesCollection+"' AND species_group='"+spc+"'")
-                col, =query.first()
-                if col=='':
-                    col='255,0,0'
-                self.sender().setStyleSheet("QPushButton { background-color: rgb("+col+")}")
-                self.sender().setText(spc)
-                
         self.incrementCounters()
 
     def event(self, event):
@@ -1117,7 +1128,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         # which key is being held down
         self.key=ev.key()
 
-        if (ev.key() == Qt.Key_Delete):
+        if ev.key() == 65:
+            if self.computeMatchBox.isChecked():
+                self.computeMatchBox.setChecked(False)
+            else:
+                self.computeMatchBox.setChecked(True)
+                
+        elif (ev.key() == Qt.Key_Delete):
 
             self.deleteSelMark()
 #        if (ev.key() == Qt.Key_R):
@@ -1955,7 +1972,12 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         else:
             self.frameCommentDlg.hide()
 
-    
+    def goToLastFrame(self):
+        query = self.dataDB.dbQuery("SELECT max(frame_number) FROM targets WHERE deployment_id='"+self.deployment+"'")
+        frame, = query.first()
+        frameIndex=self.leftImageFrames.index(int(frame))
+        self.imageSlider.setValue(frameIndex)
+        
     def editSpecies(self):
         dlg=editspeciesdlg.EditSpeciesDlg(self)
         dlg.goToTargetEvent.connect(self.changeSelectionFromTable)

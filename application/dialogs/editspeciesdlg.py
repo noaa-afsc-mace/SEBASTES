@@ -36,8 +36,10 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
         self.endFrameEdit.setText(maxfr)
         self.nextBtn.clicked.connect(self.goToNextFish)
         self.changeBtn.clicked.connect(self.changeSpecies)
+        self.changeAllBtn.clicked.connect(self.changeAll)
         self.spinBox.valueChanged.connect(self.changeZoom)
         self.doneBtn.clicked.connect(self.close)
+        
         
     def goToNextFish(self):
         if len(self.targetList)>0:
@@ -53,6 +55,7 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
             self.zoomLevel=self.spinBox.value()
             self.targetCountLabel.setText(str(len(self.targetList)))
         else:
+            self.targetCountLabel.setText('0')
             QMessageBox.warning(self, "ERROR", "No more of this species is found in the data.")
         
     def getSpeciesTargets(self):
@@ -73,6 +76,17 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
                 self.goToNextFish()
             else:
                 QMessageBox.warning(self, "ERROR", 'Select a "Change to" species.')
+    def changeAll(self):
+        if self.toSpeciesBox.currentIndex()>=0 and self.fromSpeciesBox.currentIndex()>=0:
+            reply=QMessageBox.warning(self, "WARNING", "Are you sure you want to change all "+self.fromSpeciesBox.currentText()+" to "+self.toSpeciesBox.currentText()+"?",  QMessageBox.Yes, QMessageBox.No)
+            if reply==QMessageBox.No:
+                return
+            else:
+                self.dataDB.dbExec("UPDATE targets SET species_group='"+self.toSpeciesBox.currentText()+
+                    "' WHERE deployment_id='"+self.deployment+"' AND species_group='"+self.fromSpeciesBox.currentText()+"'")
+                self.getSpeciesTargets()
+        else:
+            QMessageBox.warning(self, "ERROR", 'Select Speceis Options first!')
                 
     def changeZoom(self):
         self.zoomLevelChange=self.spinBox.value()-self.zoomLevel

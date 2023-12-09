@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\SEBASTES\SEBASTES_development\SEBASTES\application\dialogs\ui\ProfileSetupDlg.ui'
+# Form implementation generated from reading ui file 'C:\SEBASTES\SEBASTES_Python-3.7\applications\SEBASTES\application\dialogs\ui\ProfileSetupDlg.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.0
 #
@@ -343,7 +343,7 @@ class Ui_profileSetupDlg(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout)
 
         self.retranslateUi(profileSetupDlg)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(profileSetupDlg)
         profileSetupDlg.setTabOrder(self.tabWidget, self.newProfileBtn)
         profileSetupDlg.setTabOrder(self.newProfileBtn, self.selectProfileBtn)
