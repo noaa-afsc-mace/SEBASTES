@@ -318,7 +318,7 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
     def loadProfileComboBoxes(self):
         
         self.timestampTypeBox.clear()
-        self.timestampTypeBox.addItems(['in_file_name', 'EXIV', 'none'])
+        self.timestampTypeBox.addItems(['in_file_name', 'EXIF', 'none'])
         self.timestampTypeBox.setCurrentIndex(-1)
         
         self.rotateLeftBox.clear()

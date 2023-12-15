@@ -17,7 +17,7 @@ import random
 import distutils.util
 from datetime import datetime
 from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg
-
+from exif import Image
 
 class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
@@ -668,26 +668,23 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 else:
                     query=self.appDB.dbQuery("SELECT count(*) FROM PROFILES WHERE active='Yes'")
                     val, =query.first()
-                    if float(val)>1:
-                        dlg=makeseldlg.MakeSelDlg(self,  'profile', 'active')
-                        if dlg.exec_():
-                            if dlg.new:
-                                QMessageBox.warning(self, "INFO", "Please go to profile stup and get this setup before you can analyze data.")
-                                return 
-                            else:
-                                self.activeProfile=dlg.value
-                                # put it into the db
-                                time_now=QDateTime().currentDateTime()
-                                self.dataDB.dbExec("INSERT INTO deployment (project, deployment_ID,last_opened,profile)"+
-                                " VALUES('"+self.activeProject+"', '"+self.deployment+"','"+time_now.toString()+"','"+self.activeProfile+"')")
 
-                        else:
-                            QMessageBox.warning(self, "ERROR", "Need a profile to work.")
+                    dlg=makeseldlg.MakeSelDlg(self,  'profile', 'active')
+                    if dlg.exec_():
+                        if dlg.new:
+                            QMessageBox.warning(self, "INFO", "Please go to profile stup and get this setup before you can analyze data.")
                             return 
-                    else: #theres only one,  use it
-                        query=self.appDB.dbQuery("SELECT profile FROM PROFILES WHERE active='Yes'")
-                        profile, =query.first()
-                        self.activeProfile=profile
+                        else:
+                            self.activeProfile=dlg.value
+                            # put it into the db
+                            time_now=QDateTime().currentDateTime()
+                            self.dataDB.dbExec("INSERT INTO deployment (project, deployment_ID,last_opened,profile)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"','"+time_now.toString()+"','"+self.activeProfile+"')")
+
+                    else:
+                        QMessageBox.warning(self, "ERROR", "Need a profile to work.")
+                        return 
+
                         
             if not self.loadProfile():
                 QMessageBox.warning(self, "ERROR", "There's something amiss with the profile settings.  Have a peek!")
@@ -736,8 +733,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         if self.settings['ImageTimestampType']=='in_file_name':
             self.imgTimestamp=[self.settings['ImageTimestampFormat'], int(self.settings['ImageTimestampStart'])]
-        elif self.settings['ImageTimestampType']=='EXIV':
-            self.imgTimestamp=['exiv',0]
+        elif self.settings['ImageTimestampType']=='EXIF':
+            self.imgTimestamp=['exif',0]
         else:
             self.imgTimestamp=['NoTimestamp',0]
 
@@ -877,7 +874,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 
                 imageFile=file.split('\\')[-1]
                 imageFrame=int(imageFile[max([(self.imgNumInds[0]-1), 0]):self.imgNumInds[1]])
-                if str(self.imgTimestamp[0]).lower()!='exif':
+                if str(self.imgTimestamp[0]).lower()=='in_file_name':
                     try:
                         dateStartInd=self.imgTimestamp[1]-1# for python's sake
                         if self.imgTimestamp[0]=='DyyyyMMdd-Thhmmss.zzz':
@@ -895,7 +892,22 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     except:# fix this in the future?
                         goodtimestamp=False
                         timestamp=None
-                
+                elif  str(self.imgTimestamp[0]).lower()=='exif':
+                    try:
+                        img = Image(open(file, 'rb'))
+                        if img.has_exif:
+                            goodtimestamp=True
+                            timestamp=datetime.strptime(img.datetime,'%Y:%m:%d %H:%M:%S')
+                        else:
+                            goodtimestamp=False
+                            timestamp=None
+                    except:
+                            goodtimestamp=False
+                            timestamp=None
+                else:
+                    goodtimestamp=False
+                    timestamp=None
+                    
                 imageFileDict.update({imageFrame:[timestamp, imageFile]})
                 #  signal our progress
                 progress = int((i / float(totalFrames)) * 100)
