@@ -874,7 +874,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 
                 imageFile=file.split('\\')[-1]
                 imageFrame=int(imageFile[max([(self.imgNumInds[0]-1), 0]):self.imgNumInds[1]])
-                if str(self.imgTimestamp[0]).lower()=='in_file_name':
+                if str(self.settings['ImageTimestampType']).lower()=='in_file_name':
                     try:
                         dateStartInd=self.imgTimestamp[1]-1# for python's sake
                         if self.imgTimestamp[0]=='DyyyyMMdd-Thhmmss.zzz':
@@ -892,7 +892,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     except:# fix this in the future?
                         goodtimestamp=False
                         timestamp=None
-                elif  str(self.imgTimestamp[0]).lower()=='exif':
+                elif  str(self.settings['ImageTimestampType']).lower()=='exif':
                     try:
                         img = Image(open(file, 'rb'))
                         if img.has_exif:
