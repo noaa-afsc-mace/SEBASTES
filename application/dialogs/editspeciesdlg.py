@@ -13,6 +13,7 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
         self.setupUi(self)
         self.dataDB=parent.dataDB
         self.deployment=parent.deployment
+        self.fullSpeciesList=parent.speciesList
         self.speciesList=[]
         speciesList=[]
         self.zoomLevelChange=0
@@ -24,7 +25,7 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
         self.currentTarget=None
         
         # populate lists
-        self.toSpeciesBox.addItems(speciesList)
+        self.toSpeciesBox.addItems(self.fullSpeciesList)
         self.fromSpeciesBox.addItems(speciesList)
         self.toSpeciesBox.setCurrentIndex(-1)
         self.fromSpeciesBox.setCurrentIndex(-1)
