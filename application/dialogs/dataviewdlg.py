@@ -124,7 +124,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
         else:
             selObj=self.metadataTable.currentIndex()
             index= self.metadataModel.index(selObj.row(), 0, QModelIndex())
-            frame_number=self.metadataModel.data(index, Qt.DisplayRole)
+            frame_number=int(self.metadataModel.data(index, Qt.DisplayRole))
             target_number=None
         if frame_number>0:
             self.selectionEvent.emit(frame_number,  target_number)
