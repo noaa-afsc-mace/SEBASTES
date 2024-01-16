@@ -531,8 +531,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         self.camtrawlMetadataFlag=True
                         import CamTrawlMetadata
                         self.metadata = CamTrawlMetadata.CamTrawlMetadata()
-                        #self.metadata.open(self.deploymentPath + '/logs/')
-                        self.metadata.open(self.dataPath + '/../')
+                        self.metadata.open(self.deploymentPath)
+                        #self.metadata.open(self.dataPath + '/../')
                         self.metadata.query()
             self.metadataStickyBox.setEnabled(True)
             if self.guiSettings['DefaultMetadataSelection']=='retain':
@@ -625,7 +625,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.speciesCollection=self.projectDict['species_collection']
             self.metadataGroup=self.projectDict['metadata_group']
             if not QDir(self.databasePath).exists():
-                reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesnt exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
+                reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesn't exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
                 if reply==QMessageBox.Yes:
                     # file dialog again
                     dirDlg = QFileDialog(self)
@@ -694,10 +694,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         
             if not self.loadProfile():
                 QMessageBox.warning(self, "ERROR", "There's something amiss with the profile settings.  Have a peek!")
+                self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
                 return
 
             if not QDir(self.deploymentPath + '/' + self.settings['LeftCameraImagePath']+ '/').exists():
                 QMessageBox.warning(self, "ERROR", "This is not a valid deployment folder.")
+                # delete profile from deployments table in project db
+                self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
                 return
 
             self.loadEnhancements()
