@@ -531,6 +531,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         self.camtrawlMetadataFlag=True
                         import CamTrawlMetadata
                         self.metadata = CamTrawlMetadata.CamTrawlMetadata()
+                        #self.metadata.open(self.deploymentPath + '/logs/')
                         self.metadata.open(self.dataPath + '/../')
                         self.metadata.query()
             self.metadataStickyBox.setEnabled(True)
@@ -632,6 +633,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                                           QFileDialog.ShowDirsOnly)
                     # write this to db
                     self.appDB.dbExec("UPDATE PROJECTS SET DATABASE_PATH='"+dlg.selectedProjectDict['database_path']+"' WHERE PROJECT='"+self.projectDict['project']+"'")
+                    self.databasePath=dlg.selectedProjectDict['database_path']
                 else:
                     return # no load
             #  check if the SQLite database file exists
