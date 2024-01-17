@@ -655,14 +655,34 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.close()
 
             else:# a new db file is needed
-                self.dataDB = dbConnection.dbConnection(self.databasePath +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
-                self.dataDB.dbOpen()
-                if self.dataDB.db.isOpen():
-                    self.createNewProjectDatabase()
-                else:
-                    QMessageBox.warning(self, "ERROR", "Can't create project database.")
-                    return 
-                        
+                try:
+                    self.dataDB = dbConnection.dbConnection(self.databasePath +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
+                    self.dataDB.dbOpen()
+                    if self.dataDB.db.isOpen():
+                        self.createNewProjectDatabase()
+                    else:
+                        QMessageBox.warning(self, "ERROR", "Can't create project database.")
+                        return 
+                except:
+                    reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesn't exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
+                    if reply==QMessageBox.Yes:
+                        # file dialog again
+                        dirDlg = QFileDialog(self)
+                        dlg.selectedProjectDict['database_path'] = dirDlg.getExistingDirectory(self, 'Select Project Database Directory', self.__dataDir,
+                                                              QFileDialog.ShowDirsOnly)
+                        # write this to db
+                        self.appDB.dbExec("UPDATE PROJECTS SET DATABASE_PATH='"+dlg.selectedProjectDict['database_path']+"' WHERE PROJECT='"+self.projectDict['project']+"'")
+                        self.databasePath=dlg.selectedProjectDict['database_path']
+                    else:
+                        return # no load
+                    #  check if the SQLite database file exists
+                    if QFile(self.databasePath + "/"+self.projectDict['project']+ '.db').exists():
+                        #  try to open the metadata files
+                        try:
+                            self.dataDB = dbConnection.dbConnection(self.databasePath  +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
+                        except:
+                            QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
+                            return 
             # now select profile
             if not self.activeProfile:
                 # check to see if theres already an entry frop this dep
@@ -740,9 +760,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         p=self.settings['FrameNumberIndices'].split('-')
         self.imgNumInds=[int(p[0]), int(p[1])]
 
-        if self.settings['ImageTimestampType']=='in_file_name':
-            self.imgTimestamp=[self.settings['ImageTimestampFormat'], int(self.settings['ImageTimestampStart'])]
-        elif self.settings['ImageTimestampType']=='EXIF':
+        if self.settings['ImageTimestampType'].strip()=='in_file_name':
+            self.imgTimestamp=[self.settings['ImageTimestampFormat'].strip(), int(self.settings['ImageTimestampStart'].strip())]
+        elif self.settings['ImageTimestampType'].strip()=='EXIF':
             self.imgTimestamp=['exif',0]
         else:
             self.imgTimestamp=['NoTimestamp',0]
