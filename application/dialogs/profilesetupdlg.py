@@ -69,7 +69,7 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
         # set tooltips
         widgets={'LeftCameraImagePath':self.leftCamPathEdit,'RightCameraImagePath':self.rightCamPathEdit, 'CalibrationFileName': self.calFilePathEdit, \
             'FrameNumberIndices':self.stFrameIndEdit,'ImageTimestampType': self.timestampTypeBox,\
-            'ImageTimestampFormat':self.timestampFormatEdit,'ImageTimestampStart':self.timestampStartEdit,'CollectMetadata':self.metadataYesBtn, \
+            'ImageTimestampFormat':self.timestampFormatEdit,'ImageTimestampStart':self.timestampStartEdit,'ImageFileType':self.imageTypeEdit,'CollectMetadata':self.metadataYesBtn, \
             'RotateLeftImage': self.rotateLeftBox,'RotateRightImage':self.rotateRightBox, \
             'SubsampleMask':self.subsampleMaskEdit}
         query=self.appDB.dbQuery("SELECT setting, description FROM SETTING_DESCRIPTIONS")
@@ -357,6 +357,8 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
                 self.timestampFormatEdit.setText(value)
             elif setting=='ImageTimestampStart':
                 self.timestampStartEdit.setText(value)
+            elif setting=='ImageFileType':
+                self.imageTypeEdit.setText(value)
             elif setting=='CollectMetadata':
                 if value.lower()=='yes' or value.lower()=='true':
                     self.metadataYesBtn.setChecked(True)
@@ -373,7 +375,7 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
                 QMessageBox.warning(self, "ERROR", "Unknown setting!")
 
     def saveProfile(self):
-        new=False
+
         if self.activeProfile==None:# this is a new profile
             if self.profileNameEdit.text()=='':
                 return
@@ -383,7 +385,8 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
                 desc = desc.replace("'", "''")
             self.appDB.dbExec("INSERT INTO PROFILES (profile, active, description)  VALUES('"+self.activeProfile+
             "','Yes','"+desc+"')")
-            new=True
+
+        self.appDB.dbExec("DELETE FROM PROFILE_SETTINGS WHERE PROFILE='"+self.activeProfile+"'")
         query=self.appDB.dbQuery("SELECT setting FROM SETTING_DESCRIPTIONS")
         for setting,  in query:
             if setting=='LeftCameraImagePath':
@@ -400,6 +403,10 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
                 value=self.timestampFormatEdit.text()
             elif setting=='ImageTimestampStart':
                value= self.timestampStartEdit.text()
+            elif setting=='ImageFileType':
+               value= self.imageTypeEdit.text()
+               if value=='':
+                   value='jpg'
             elif setting=='CollectMetadata':
                 if self.metadataYesBtn.isChecked():
                     value='Yes'
@@ -414,12 +421,9 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
             else:
                 print((setting, value))
                 QMessageBox.warning(self, "ERROR", "Unknown setting!")
-            
-            if new:
-                self.appDB.dbExec("INSERT INTO PROFILE_SETTINGS (profile, setting, value)  VALUES('"+self.activeProfile+
+
+            self.appDB.dbExec("INSERT INTO PROFILE_SETTINGS (profile, setting, value)  VALUES('"+self.activeProfile+
             "','"+setting+"','"+value+"')")
-            else:
-                self.appDB.dbExec("UPDATE PROFILE_SETTINGS SET value='"+value+"' WHERE setting='"+setting+"' AND profile='"+self.activeProfile+"'")
             
     def loadSpecies(self):
         self.speciesFrame.setEnabled(True)

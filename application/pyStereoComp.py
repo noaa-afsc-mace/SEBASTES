@@ -57,6 +57,28 @@ class pyStereoComp(object):
             except:
                 msg=self.showError()
                 return False,  msg
+        elif self.mode=='json':
+            try:
+                import json
+                file=open(fname)
+                self.calData={}
+                cal=json.load(file)
+                self.calData.update({'fc_left':array([[cal['fx_left']],[cal['fy_left']]])})
+                self.calData.update({'cc_left':array([[cal['cx_left']],[cal['cy_left']]])})
+                self.calData.update({'alpha_c_left':array([[0]])})
+                self.calData.update({'kc_left':array([[0.],[0.]])})
+
+                self.calData.update({'fc_right':array([[cal['fx_right']],[cal['fy_right']]])})
+                self.calData.update({'cc_right':array([[cal['cx_right']],[cal['cy_right']]])})
+                self.calData.update({'alpha_c_right':array([[0]])})
+                self.calData.update({'kc_right':array([[0.],[0.]])})
+                self.calData.update({'R':eye(3)})
+                self.calData.update({'T':array([cal['T']])*1000.})
+                return True,  self.calData
+            except:
+                msg=self.showError()
+                return False,  msg
+            
         else:
             return False,  'mode unrecognized'
     
@@ -79,7 +101,7 @@ class pyStereoComp(object):
             T_vect = tile(self.calData['T'], (1, xL.shape[1]))
             XR = dot(self.calData['R'], XL) + T_vect
             
-        elif self.mode=='matlab':
+        elif self.mode in ['matlab', 'json']:
             '''% [XL,XR] = stereo_triangulation(xL,xR,om,T,fc_left,cc_left,kc_left,alpha_c_left,fc_right,cc_right,kc_right,alpha_c_right),
                 %
                 % Function that computes the position of a set on N points given the left and right image projections.
@@ -422,6 +444,8 @@ class pyStereoComp(object):
         return epipole[0:2,:]
         
     def applyDistortion(self, x, k):
+        if sum(k)==0:
+            return x
         # Complete the distortion vector if you are using the simple distortion model:
         length_k = len(k)
         if length_k <5:
@@ -457,7 +481,7 @@ class pyStereoComp(object):
                 xp=xp[0].T
             else:
                 xp=reshape(xp,(2,2)).T
-        elif self.mode=='matlab':
+        elif self.mode in ['matlab', 'json']:
     
             # rigid motion: use 3x3 identity matrix for R and 3x1 0 vector for T
             R = eye(3)

@@ -16,7 +16,7 @@ import re
 import random
 import distutils.util
 from datetime import datetime
-from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg
+from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg, annotatorDlg
 from exif import Image
 
 class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
@@ -44,6 +44,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.activeGV='Both'
         self.defaultMetadataGroup='CamTrawl_metadata'
         self.randomCellBounds=None
+        self.annotator=None
 
 #        self.keystrokeMap={}
 
@@ -532,7 +533,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         import CamTrawlMetadata
                         self.metadata = CamTrawlMetadata.CamTrawlMetadata()
                         self.metadata.open(self.deploymentPath)
-                        #self.metadata.open(self.dataPath + '/../')
                         self.metadata.query()
             self.metadataStickyBox.setEnabled(True)
             if self.guiSettings['DefaultMetadataSelection']=='retain':
@@ -557,11 +557,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         for deployment_id, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value in query:
                             # insert net type of record
                             if metadata_value=='Checked':
-                                self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                    " VALUES('"+self.activeProject+"', '"+deployment_id+"',"+frame_number+",'"+metadata_group+"','Yes','"+self.metadataTypesDict['ExclusiveRadioBox3']+"','Checked')")
+                                self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value,annotator)"+
+                                    " VALUES('"+self.activeProject+"', '"+deployment_id+"',"+frame_number+",'"+metadata_group+"','Yes','"+self.metadataTypesDict['ExclusiveRadioBox3']+
+                                    "','Checked','"+self.annotator+"')")
                             else:
-                                self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                    " VALUES('"+self.activeProject+"','"+deployment_id+"',"+frame_number+",'"+metadata_group+"','No','"+self.metadataTypesDict['ExclusiveRadioBox3']+"','Checked')")
+                                self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value,annotator)"+
+                                    " VALUES('"+self.activeProject+"','"+deployment_id+"',"+frame_number+",'"+metadata_group+"','No','"+self.metadataTypesDict['ExclusiveRadioBox3']+
+                                    "','Checked','"+self.annotator+"')")
                             
                         # delete old style records
                         self.dataDB.dbExec("DELETE FROM FRAME_METADATA WHERE"+
@@ -621,10 +623,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 return 
 
             #  check if the database folder exists
-            self.databasePath=self.projectDict['database_path']
+            self.projectDBPath=self.projectDict['database_path']
             self.speciesCollection=self.projectDict['species_collection']
             self.metadataGroup=self.projectDict['metadata_group']
-            if not QDir(self.databasePath).exists():
+            if not QDir(self.projectDBPath).exists():
                 reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesn't exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
                 if reply==QMessageBox.Yes:
                     # file dialog again
@@ -633,61 +635,61 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                                           QFileDialog.ShowDirsOnly)
                     # write this to db
                     self.appDB.dbExec("UPDATE PROJECTS SET DATABASE_PATH='"+dlg.selectedProjectDict['database_path']+"' WHERE PROJECT='"+self.projectDict['project']+"'")
-                    self.databasePath=dlg.selectedProjectDict['database_path']
+                    self.projectDBPath=dlg.selectedProjectDict['database_path']
                 else:
                     return # no load
-            #  check if the SQLite database file exists
-            if QFile(self.databasePath + "/"+self.projectDict['project']+ '.db').exists():
-                #  try to open the metadata files
-                try:
-                    self.dataDB = dbConnection.dbConnection(self.databasePath  +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
-                except:
-                    QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
-                    return 
+
                 # check for existing profile in profile db
+            ################   HERE we will open a local "data db", which we will merge with the project at teh end  ######################
+            self.dataPath = self.sourcePath.path()+ '/' +self.deployment + '/' + "data" + '/'
+            #  check if the local SQLite database file exists
+            if QDir(self.dataPath).exists():
+                #  check if the SQLite database file exists
+                if QFile(self.dataPath + self.activeProject+'_' + self.deployment+'.db').exists():
+                    #  try to open the metadata files
+                    try:
+                        self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
+                    except:
+                        QMessageBox.warning(self, "ERROR", "There's something amiss with the data folder. You need to clear this up to access this deployment.")
+                        return
+                    # check for existing profile in profile db
+                    try:
+                        self.dataDB.dbOpen()
+                    except:
+                        self.showError()
+                        self.close()
+                else: # this is the xcase where we used project db for data, now we need to create a local data db from teh project one
+                    self.reconstructDataDB()
+                # check for annotator field in db, if not, add it
+                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+                fields=[]
+                for field in query:
+                    fields.append(field[1])
+                if not 'ANNOTATOR' in fields:
+                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
+
+            else:# a new db file is needed - this is the first tiem we are opening this drop
+                # make the folder
+                QDir().mkdir(self.dataPath)
                 try:
+                    self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
                     self.dataDB.dbOpen()
-                    # get the profile
-                    query = self.dataDB.dbQuery("SELECT PROFILE FROM DEPLOYMENT WHERE deployment_id='"+self.deployment+"'")
-                    self.activeProfile, =query.first()
+                    if self.dataDB.db.isOpen():
+                        self.makeDB()
+                    else:
+                        QMessageBox.warning(self, "ERROR", "Can't create local database.")
+                        return 
                 except:
                     self.showError()
                     self.close()
-
-            else:# a new db file is needed
-                try:
-                    self.dataDB = dbConnection.dbConnection(self.databasePath +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
-                    self.dataDB.dbOpen()
-                    if self.dataDB.db.isOpen():
-                        self.createNewProjectDatabase()
-                    else:
-                        QMessageBox.warning(self, "ERROR", "Can't create project database.")
-                        return 
-                except:
-                    reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesn't exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
-                    if reply==QMessageBox.Yes:
-                        # file dialog again
-                        dirDlg = QFileDialog(self)
-                        dlg.selectedProjectDict['database_path'] = dirDlg.getExistingDirectory(self, 'Select Project Database Directory', self.__dataDir,
-                                                              QFileDialog.ShowDirsOnly)
-                        # write this to db
-                        self.appDB.dbExec("UPDATE PROJECTS SET DATABASE_PATH='"+dlg.selectedProjectDict['database_path']+"' WHERE PROJECT='"+self.projectDict['project']+"'")
-                        self.databasePath=dlg.selectedProjectDict['database_path']
-                    else:
-                        return # no load
-                    #  check if the SQLite database file exists
-                    if QFile(self.databasePath + "/"+self.projectDict['project']+ '.db').exists():
-                        #  try to open the metadata files
-                        try:
-                            self.dataDB = dbConnection.dbConnection(self.databasePath  +"/"+ self.projectDict['project']+'.db', '', '',label='dataDB', driver="QSQLITE")
-                        except:
-                            QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
-                            return 
+                        
             # now select profile
             if not self.activeProfile:
                 # check to see if theres already an entry frop this dep
-                query=self.dataDB.dbQuery("SELECT profile FROM deployment WHERE project='"+self.activeProject+
-                            "' AND deployment_ID = '"+self.deployment+"'")
+                query=self.dataDB.dbQuery("SELECT profile FROM deployment WHERE deployment_ID = '"+self.deployment+"'")
                 profile, =query.first()
                 if profile:
                     self.activeProfile=profile
@@ -742,7 +744,52 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.gvRight.image.setParameters(self.rightAdjustmentParms)
         except:
             pass
-            
+    
+    def reconstructDataDB(self):
+        try:
+            # create database - folder should be there already
+            self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
+            self.dataDB.dbOpen()
+            if self.dataDB.db.isOpen():
+                self.makeDB()
+            else:
+                QMessageBox.warning(self, "ERROR", "Can't create local database.")
+                return 
+        except:
+            self.showError()
+            self.close()
+        
+        # make sure proj db has annotator?
+        try:
+            self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
+            self.projectDB.dbOpen()
+            # check for annotator field in db, if not, add it
+            query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
+            fields=[]
+            for field in query:
+                fields.append(field[1])
+            if not 'ANNOTATOR' in fields:
+                self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
+                self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
+                self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
+                self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
+            self.projectDB.dbClose()
+        except:
+            self.showError()
+            self.close()
+        
+        # now insert data from teh proj to the local
+        self.dataDB.dbExec("BEGIN TRANSACTION;")
+        self.dataDB.dbExec("ATTACH DATABASE '"+self.projectDBPath  +"/"+ self.projectDict['project']+".db' AS PROJ_DB;")
+        self.dataDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM PROJ_DB.DEPLOYMENT WHERE DEPLOYMENT_ID='"+self.deployment+"';")
+        self.dataDB.dbExec("INSERT INTO FRAMES SELECT * FROM PROJ_DB.FRAMES WHERE DEPLOYMENT_ID='"+self.deployment+"';")
+        self.dataDB.dbExec("INSERT INTO BOUNDING_BOXES SELECT * FROM PROJ_DB.BOUNDING_BOXES WHERE DEPLOYMENT_ID='"+self.deployment+"';")
+        self.dataDB.dbExec("INSERT INTO TARGETS SELECT * FROM PROJ_DB.TARGETS WHERE DEPLOYMENT_ID='"+self.deployment+"';")
+        self.dataDB.dbExec("INSERT INTO FRAME_METADATA SELECT * FROM PROJ_DB.FRAME_METADATA WHERE DEPLOYMENT_ID='"+self.deployment+"';")
+        self.dataDB.dbExec("COMMIT;")
+        self.dataDB.dbExec("DETACH DATABASE PROJ_DB;")
+
+        
     def setupDeployment(self):
         self.deploymentBox.setText(self.activeProject+":"+self.deployment)
         # clear out gv transform
@@ -826,13 +873,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             filename=filename.strip()
             if filename[-4:]=='.npz':
                 self.stereoComp.mode='openCV'
-            else:
+            elif filename[-4:]=='.mat':
                 self.stereoComp.mode='matlab'
+            elif filename[-4:]=='json':
+                self.stereoComp.mode='json'
+            else:
+                QMessageBox.warning(self, "ERROR", filename+" is not an accepted file type.")
+                return False
             if QFile('../calibrations/' + filename).exists():
                 try:
                     State, cal = self.stereoComp.importCalData('../calibrations/' + filename)
                 except:
-                    QMessageBox.warning(self, "ERROR", filename+" Is not located in the SEBASTES\calibration folder.  Please put it there.")
+                    QMessageBox.warning(self, "ERROR", filename+ "  Has issues!!!")
                     return False
             else:
                 QMessageBox.warning(self, "ERROR", filename+" Is not located in the SEBASTES\calibration folder.  Please put it there.")
@@ -869,8 +921,21 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.playBtn.setEnabled(True)
         return True
         
-    def createNewProjectDatabase(self):
+    def makeDB(self):
+        file=open('../db/Project.db.sql')
+        sql_script=file.read()
+        statements=sql_script.split(';')
+        for statement in statements:
+            if statement !='':
+                statement=statement.replace('\t', '')
+                statement=statement.replace('\n', '')
+                try:
+                    self.dataDB.dbExec(statement)
+                except:
+                    pass
+
         
+    def createNewProjectDatabase(self):
         file=open('../db/project.db.sql')
         sql_script=file.read()
         statements=sql_script.split(';')
@@ -878,7 +943,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             statement=statement.replace('\t', '')
             statement=statement.replace('\n', '')
             try:
-                self.dataDB.dbExec(statement)
+                self.projectDB.dbExec(statement)
             except:
                 print(statement)
 
@@ -892,8 +957,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 #                icacheFile.close()
 #            else:#  get the directory listing
             imageFileDict={}
-            if 'imageFileType' in self.settings:
-                type=self.settings['imageFileType']
+            if 'ImageFileType' in self.settings:
+                type=self.settings['ImageFileType']
             else:
                 type='jpg'
             lastProgress = 0
@@ -907,12 +972,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     try:
                         dateStartInd=self.imgTimestamp[1]-1# for python's sake
                         if self.imgTimestamp[0]=='DyyyyMMdd-Thhmmss.zzz':
+                            trim=3
                             pydateformat='D%Y%m%d-T%H%M%S.%f'
                         else:
                             pydateformat=self.imgTimestamp[0]
+                            trim=0
                         try:
-
-                            timestamp=datetime.strptime(imageFile[dateStartInd:dateStartInd+len(datetime.now().strftime(pydateformat))-3], pydateformat)
+                            timestamp=datetime.strptime(imageFile[dateStartInd:dateStartInd+len(datetime.now().strftime(pydateformat))-trim], pydateformat)
                             goodtimestamp=True
                         except:
                             goodtimestamp=False
@@ -1381,6 +1447,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     # check for paired item
                     target_number = int(self.pointMarks[item][0])
                     self.currentTarget=target_number
+                    # get target level annotator
+                    query = self.dataDB.dbQuery("SELECT annotator FROM TARGETS WHERE frame_number = "+self.frameBox.text()+" and target_number="+str(self.currentTarget)+" AND deployment_id='"+self.deployment+"'")
+                    current_tator, =query.first()
+                    if current_tator==None:
+                        current_tator=''
+                    self.annotatorLabel.setText(current_tator)
+                    
                     query = self.dataDB.dbQuery("SELECT target_link FROM targets WHERE frame_number = "+self.frameBox.text()+" and target_number="+str(self.currentTarget)+" AND deployment_id='"+self.deployment+"'")
                     target_link, =query.first()
                     if target_link!='':
@@ -1577,8 +1650,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         tClass='SceneRange'
                                     else: # animal target
                                         tClass=self.spcButtons[self.spcInd].text()
-                                    self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY)  "+
-                                    "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+")")
+                                    self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator)  "+
+                                    "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"')")
                                     self.pairPoints=[]
                                     if self.rangeBtn.isChecked():
                                         self.rangeBtn.setChecked(False)
@@ -1635,8 +1708,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                     tClass='SceneRange'
                                 else: # animal target
                                     tClass=self.spcButtons[self.spcInd].text()
-                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY)  "+
-                                "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+")")
+                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator)  "+
+                                "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"')")
                                 self.pairPoints=[]
                                 if self.rangeBtn.isChecked():
                                     self.rangeBtn.setChecked(False)
@@ -1676,8 +1749,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                             else:
                                 points="NULL,NULL,"+str(clickLoc.x())+","+str(clickLoc.y())
 
-                            self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+")")
+                            self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"')")
                             self.pairedTarget=False
                             if self.showDataCheck.isChecked():
                                 self.datadlg.refreshView()
@@ -1747,9 +1820,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     cam='right'
                 width=imageObj.image.enhancedData.shape[1]
                 height=imageObj.image.enhancedData.shape[0]
-                self.dataDB.dbExec("INSERT INTO bounding_boxes (project, deployment_ID,frame_number, target_number, species_group, camera_id, image_file_name, origin_x,origin_y,width, height, frame_width, frame_height)"+
+                self.dataDB.dbExec("INSERT INTO bounding_boxes (project, deployment_ID,frame_number, target_number, species_group, camera_id, image_file_name, origin_x,origin_y,width, height, frame_width, frame_height,annotator)"+
                                                     " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentBBoxTarget)+",'"+self.spcButtons[self.spcInd].text()+"','" +cam+"',"
-                                                    "'"+image_file_name+"', "+str(BoxCoords.x())+", "+str(BoxCoords.y())+", "+str(BoxCoords.width())+", "+str(BoxCoords.height())+","+str(width)+","+str(height)+")")
+                                                    "'"+image_file_name+"', "+str(BoxCoords.x())+", "+str(BoxCoords.y())+", "+str(BoxCoords.width())+", "+str(BoxCoords.height())+","+str(width)+","+str(height)+",'"+self.annotator+"')")
                 return# we are just rubberbanding, no need to do anythin else
 
             dimLine = imageObj.endDimensionLine()
@@ -1805,7 +1878,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         ", RHX = "+str(self.targetStereoData[7])+", RHY = "+str(self.targetStereoData[8])+", RTX = "+str(self.targetStereoData[9])+", RTY = "+str(self.targetStereoData[10])+
                                         ", hx = "+str(self.targetStereoData[11])+", hy = "+str(self.targetStereoData[12])+", hz = "+str(self.targetStereoData[13])+
                                         ", tx = "+str(self.targetStereoData[14])+", ty = "+str(self.targetStereoData[15])+", tz = "+str(self.targetStereoData[16])+
-                                            ", comment = '' WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                                            ", comment = '', annotator='"+self.annotatorLabel.text()+"' WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
                         self.measureBtn.setChecked(False)
                     elif self.measureScBtn.isChecked():# measure scene
                         valstring=""
@@ -1830,8 +1903,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                             marker.hideLabels(None)
                         self.pairedTarget=True
                         self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX,LY,RX,RY,Length, Range, Error,  LHX, LHY, LTX, LTY, RHX, RHY,"+
-                          "RTX, RTY, hx, hy, hz, tx, ty, tz, comment) VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'SceneMeasurement',"+str(LX)+","+str(LY)+
-                          ","+str(RX)+","+str(RY)+valstring+",'')")
+                          "RTX, RTY, hx, hy, hz, tx, ty, tz, comment, annotator) VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'SceneMeasurement',"+str(LX)+","+str(LY)+
+                          ","+str(RX)+","+str(RY)+valstring+",'','"+self.annotator+"')")
                         self.measureScBtn.setChecked(False)
                 else: # line is drawn on only one side
                     if self.computeMatchBox.isChecked():
@@ -1917,7 +1990,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                             ", RHX = "+str(self.targetStereoData[7])+", RHY = "+str(self.targetStereoData[8])+", RTX = "+str(self.targetStereoData[9])+", RTY = "+str(self.targetStereoData[10])+
                                             ", hx = "+str(self.targetStereoData[11])+", hy = "+str(self.targetStereoData[12])+", hz = "+str(self.targetStereoData[13])+
                                             ", tx = "+str(self.targetStereoData[14])+", ty = "+str(self.targetStereoData[15])+", tz = "+str(self.targetStereoData[16])+
-                                                ", comment = '' WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                                                ", comment = '', annotator='"+self.annotatorLabel.text()+"' WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
                             self.measureBtn.setChecked(False)
 
 
@@ -2074,12 +2147,22 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.speciesDockWidget.show()
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
                 self.metadataDockWidget.show()
+            # get the annotator now!
+            dlg=annotatorDlg.AnnotatorDlg()
+            if dlg.exec_():
+                self.annotator=dlg.annotator
+                self.annotatorLabel.setText(self.annotator)
+            else:
+                self.annotator=''
                 
             self.reloadData()
             for widget in self.recordEnableWidgets:
                 if widget in [self.measureBtn,  self.measureScBtn,  self.rangeBtn] and self.monoRadio.isChecked(): # dont enable widgets for mono mode
                     continue
                 widget.setEnabled(True)
+
+                
+
         else:
             self.imageSlider.setEnabled(True)
             #self.__changeImage()
@@ -2210,15 +2293,32 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         try:
             if not self.recordBtn.isChecked():
                 return
+            # get the annotator business with commas
+            query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
+            current_tators, =query.first()
+            if current_tators==None:
+                current_tators=''
+            tators=current_tators.split(',')
+            if not self.annotator in tators:
+                # add our tator
+                if len(current_tators)>0:
+                    current_tators=current_tators+","+self.annotator
+                else:
+                    current_tators=self.annotator
+            
             # see if current frame is already in 
             query=self.dataDB.dbQuery("SELECT frame_number FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
             frame, =query.first()
             if frame:# already exists
                 if self.frameCommentDlg!=None:
-                    self.dataDB.dbExec("UPDATE frames SET comment='"+self.frameCommentDlg.commentBox.toPlainText()+"' WHERE frame_number="+self.frameBox.text()+"  AND deployment_ID='"+self.deployment+"'")
+                    comment=self.frameCommentDlg.commentBox.toPlainText()
+                else:
+                    comment=''
+                self.dataDB.dbExec("UPDATE frames SET comment='"+comment+"', annotator='"+current_tators+"' WHERE frame_number="+self.frameBox.text()+
+                "  AND deployment_ID='"+self.deployment+"'")
             else:
-                self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment)"+
-                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','')")
+                self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment, annotator)"+
+                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','','"+self.annotator+"')")
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
                 # now we write metadata
                 self.dataDB.dbExec("DELETE FROM FRAME_METADATA WHERE frame_number="+self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND deployment_ID='"+self.deployment+"'")
@@ -2227,8 +2327,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         if rBtn.isChecked():
                             mdt_tag=rBtn.text()
                             # write exclusive radio button 1
-                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                            " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox1']+"','Checked')")
+                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value,annotator)"+
+                            " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox1']+
+                            "','Checked','"+self.annotator+"')")
                             break # we can do this caouse its autoexclusive!
                             
                 if 'ExclusiveRadioBox2' in self.metadataTypesDict:
@@ -2236,16 +2337,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         if rBtn.isChecked():
                             mdt_tag=rBtn.text()
                             # write exclusive radio button 1
-                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox2']+"','Checked')")
+                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox2']+
+                            "','Checked','"+self.annotator+"')")
                             break # we can do this caouse its autoexclusive!
                                     
                     for rBtn in self.radioBtnTags3:
                         if rBtn.isChecked():
                             mdt_tag=rBtn.text()
                             # write exclusive radio button 1
-                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox3']+"','Checked')")
+                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value,annotator)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['ExclusiveRadioBox3']+
+                            "','Checked','"+self.annotator+"')")
                             break # we can do this caouse its autoexclusive!
                             
                 if 'LineEdit' in self.metadataTypesDict:
@@ -2253,8 +2356,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         if self.metadataLineEditLabels[i].isVisible():
                             mdt_tag=self.metadataLineEditLabels[i].text()
                             mtd_val=self.metadataLineEdits[i].text()
-                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                            " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['LineEdit']+"','"+mtd_val+"')")
+                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                            " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['LineEdit']+"','"+
+                            mtd_val+"','"+self.annotator+"')")
 
                 if 'CheckBox' in self.metadataTypesDict:
                     for i in list(range(len(self.metadataCheckBoxes))):
@@ -2264,8 +2368,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                 mtd_val='Checked'
                             else:
                                 mtd_val='Unchecked'
-                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['CheckBox']+"','"+mtd_val+"')")
+                            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.metadataGroup+"','"+mdt_tag+"','"+self.metadataTypesDict['CheckBox']+"','"+
+                            mtd_val+"','"+self.annotator+"')")
             if not self.metadataStickyBox.isChecked():# reset autoexclusive buttons
                 self.clearAutoExclusiveRadioBtnBoxes()
             if self.showDataCheck.isChecked():
@@ -2308,10 +2413,24 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 boxObj.addLabel(0, target_number, color=col, size=self.guiSettings['LabelTextSize'])
 
         else:
+            # get frame level annotator
+            query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
+            current_tators, =query.first()
+#            if current_tators==None:
+#                current_tators=''
+#            tators=current_tators.split(',')
+#            if not self.annotator in tators:
+#                # add our tator
+#                if len(current_tators)>0:
+#                    current_tators=current_tators+","+self.annotator
+#                else:
+#                    current_tators=self.annotator
+            self.annotatorLabel.setText(current_tators)
             # draw targets
             self.activeLine[self.gvLeft]=None
             self.activeLine[self.gvRight]=None
-            query = self.dataDB.dbQuery("SELECT target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY FROM targets WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
+            query = self.dataDB.dbQuery("SELECT target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY FROM targets WHERE frame_number="+
+            self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
             targetToDelete=[]
             for target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY in query:
                 # find out the class and appropriate color
@@ -2570,11 +2689,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.targetStereoData=[length, Range, error,  LHX, LHY,LTX,LTY, RHX, RHY,RTX,RTY,lhx, lhy, lhz,ltx,lty, ltz]
 
     def recompute3D(self):
+        
+        reply=QMessageBox.warning(self, "WARNING", "Do you want to recompute 3D locations for entire project database?/n If only for this haul press No.",  QMessageBox.Yes, QMessageBox.No)
+        if reply==QMessageBox.Yes:
+            sql=("SELECT deployment_id, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets")
+        else:
+            sql=("SELECT deployment_id, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets WHERE deployment_id='"+self.deployment+"'")
+        
         try:
             self.targetPosition=[None,  None]
             from QImageViewer import QIVDimensionLine
-            query = self.dataDB.dbQuery("SELECT frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets WHERE deployment_id='"+self.deployment+"'")
-            for frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY in query:
+            query = self.dataDB.dbQuery(sql)
+            for deployment, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY in query:
                 print(frame_number,  target_number)
 
                 if LTX==None:
@@ -2585,7 +2711,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         #self.targetStereoData=[range, error,  lx, ly, lz]
                         sql=("UPDATE targets SET Range = "+str(self.targetStereoData[0])+",  Error = "+str(self.targetStereoData[1])+",  hx = "+
                         str(self.targetStereoData[2])+",  hy = "+str(self.targetStereoData[3])+",  hz = "+str(self.targetStereoData[4])+" WHERE frame_number = "+
-                        frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+self.deployment+"'")
+                        frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+deployment+"'")
                         self.dataDB.dbExec(sql)
                 else:
                     dimLine = QIVDimensionLine.QIVDimensionLine(startPoint=QPointF(float(LHX), float(LHY)), endPoint=QPointF(float(LTX), float(LTY)), color=self.guiSettings['TargetLineColor'],
@@ -2601,7 +2727,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.dataDB.dbExec("UPDATE targets SET Length = "+str(self.targetStereoData[0])+", Range = "+str(self.targetStereoData[1])+",  Error = "+str(self.targetStereoData[2])+",  hx = "+
                     str(self.targetStereoData[11])+",  hy = "+str(self.targetStereoData[12])+",  hz = "+str(self.targetStereoData[13])+", tx = "+
                     str(self.targetStereoData[14])+", ty = "+str(self.targetStereoData[15])+", tz = "+str(self.targetStereoData[16])+" WHERE frame_number = "+
-                    frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+self.deployment+"'")
+                    frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+deployment+"'")
             QMessageBox.warning(self, "INFO", "Positions have been recalculated :-)")
             self.__changeImage()
         except:
@@ -2851,17 +2977,22 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             " AND metadata_group = 'CountingGridInformation'"+
              "AND metadata_type='SpeciesInGrid' AND metadata_tag='"+str(self.gridCount)+"' AND deployment_id='"+self.deployment+"'")
         else: # new grid, need to write everything
-            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','GridSize','"+self.gridSetup['GridSize']+"')")
-            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','SpeciesInGrid','"+";".join(self.speciesInGrid)+"')")
-            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','RandomCell','"+str(self.randomCell)+"')")
-            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','CameraUsed','"+self.activeGV+"')")
+            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','GridSize','"+
+                                self.gridSetup['GridSize']+"','"+self.annotator+"')")
+            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','SpeciesInGrid','"+
+                                ";".join(self.speciesInGrid)+"','"+self.annotator+"')")
+            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','RandomCell','"+
+                                str(self.randomCell)+"','"+self.annotator+"')")
+            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project,deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','CameraUsed','"+
+                                self.activeGV+"','"+self.annotator+"')")
             vals=self.gridSetup['GridSize'].split('x')
-            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value)"+
-                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','ScalingFactor','"+str(int(vals[0])*int(vals[1]))+"')")
+            self.dataDB.dbExec("INSERT INTO FRAME_METADATA (project, deployment_ID, frame_number, metadata_group, metadata_tag, metadata_type, metadata_value, annotator)"+
+                                " VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+",'CountingGridInformation','"+str(self.gridCount)+"','ScalingFactor','"+
+                                str(int(vals[0])*int(vals[1]))+"','"+self.annotator+"')")
 
     def clearGridData(self):
         reply=QMessageBox.warning(self, "WARNING", "Sure you want to delete the grid data for this frame?",  QMessageBox.Yes, QMessageBox.No)
@@ -2876,9 +3007,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         import pandas as pd
         import sqlite3
         try:
-            if not QDir(self.sourcePath.path() + '/' + self.deployment + '/' + "data" + '/').exists():
-                QDir().mkdir(self.sourcePath.path() + '/' + self.deployment + '/' + "data" + '/')
-            conn = sqlite3.connect(self.databasePath +"/"+ self.projectDict['project']+'.db', isolation_level=None,detect_types=sqlite3.PARSE_COLNAMES)
+            conn = sqlite3.connect(self.dataPath + self.activeProject+'_' + self.deployment+'.db', isolation_level=None,detect_types=sqlite3.PARSE_COLNAMES)
             db_df = pd.read_sql_query("SELECT * FROM frames WHERE  deployment_id='"+self.deployment+"'", conn)
             filename=str(self.sourcePath.path() + '/' + self.deployment + '/' + "data" + '/' + self.activeProject+'_' + self.deployment+'_frames.csv')
             db_df.to_csv(filename, index=False)
@@ -2897,7 +3026,57 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             imageadjustments={'left':self.leftAdjustmentParms, 'right':self.rightAdjustmentParms}
             ny.save(self.sourcePath.path() + '/' + self.deployment + '/' + "data" + '/' + self.deployment+'_image_adjustments', imageadjustments)
         except:
-            pass
+            self.showError()
+            
+    def updateProjectDB(self):
+        #  check if the SQLite database file exists
+        if QFile(self.projectDBPath + "/"+self.projectDict['project']+ '.db').exists():
+            #  try to open the database file
+            try:
+                self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
+                self.projectDB.dbOpen()
+                # check for annotator field in db, if not, add it
+                query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
+                fields=[]
+                for field in query:
+                    fields.append(field[1])
+                if not 'ANNOTATOR' in fields:
+                    self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
+                    self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
+                    self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
+                    self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
+            except:
+                QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
+                self.showError()
+            
+        else:# need a new one
+            
+            self.createNewProjectDatabase()
+            
+        try:
+            
+            # here's a new step - update project db?
+            # delete current deplyment from project database
+            self.projectDB.dbExec("DELETE FROM FRAME_METADATA WHERE Deployment_ID='"+self.deployment+"'")
+            self.projectDB.dbExec("DELETE FROM TARGETS WHERE Deployment_ID='"+self.deployment+"'")
+            self.projectDB.dbExec("DELETE FROM BOUNDING_BOXES WHERE Deployment_ID='"+self.deployment+"'")
+            self.projectDB.dbExec("DELETE FROM FRAMES WHERE Deployment_ID='"+self.deployment+"'")
+            self.projectDB.dbExec("DELETE FROM DEPLOYMENT WHERE Deployment_ID='"+self.deployment+"'")
+            # now insert current data - a little slow?
+            self.projectDB.dbExec("BEGIN TRANSACTION;")
+            self.projectDB.dbExec("ATTACH DATABASE '"+self.dataPath + self.activeProject+'_' + self.deployment+'.db'" AS DATA_DB;")
+            self.projectDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM DATA_DB.DEPLOYMENT;")
+            self.projectDB.dbExec("INSERT INTO FRAMES SELECT * FROM DATA_DB.FRAMES;")
+            self.projectDB.dbExec("INSERT INTO BOUNDING_BOXES SELECT * FROM DATA_DB.BOUNDING_BOXES;")
+            self.projectDB.dbExec("INSERT INTO TARGETS SELECT * FROM DATA_DB.TARGETS;")
+            self.projectDB.dbExec("INSERT INTO FRAME_METADATA SELECT * FROM DATA_DB.FRAME_METADATA;")
+            self.projectDB.dbExec("COMMIT;")
+            self.projectDB.dbExec("DETACH DATABASE DATA_DB;")
+        except:
+            self.showError()
+            
+            
+
     def rgbStr2Lists(self,  rgbstr):
         try:
             vals=rgbstr.split(',')

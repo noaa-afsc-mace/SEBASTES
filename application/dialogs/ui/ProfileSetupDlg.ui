@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>649</width>
-    <height>652</height>
+    <height>728</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -92,6 +92,81 @@
          <layout class="QVBoxLayout" name="verticalLayout_11">
           <item>
            <layout class="QGridLayout" name="gridLayout">
+            <item row="2" column="0">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>LeftCameraImagePath</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>ImageTimestampFormat</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="2">
+             <widget class="QLineEdit" name="timestampStartEdit"/>
+            </item>
+            <item row="1" column="2">
+             <widget class="QLineEdit" name="profileDescriptionEdit"/>
+            </item>
+            <item row="3" column="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_17">
+              <item>
+               <widget class="QLineEdit" name="rightCamPathEdit"/>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <item>
+               <widget class="QLineEdit" name="leftCamPathEdit"/>
+              </item>
+             </layout>
+            </item>
+            <item row="11" column="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
+              <item>
+               <widget class="QComboBox" name="rotateLeftBox"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_12">
+                <property name="text">
+                 <string>degrees</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="13" column="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_12">
+              <item>
+               <widget class="QLineEdit" name="subsampleMaskEdit"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="subsampleMaskBtn">
+                <property name="maximumSize">
+                 <size>
+                  <width>31</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>?</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>FrameNumberIndices</string>
+              </property>
+             </widget>
+            </item>
             <item row="7" column="2">
              <layout class="QHBoxLayout" name="horizontalLayout_19">
               <item>
@@ -112,31 +187,57 @@
               </item>
              </layout>
             </item>
-            <item row="3" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_17">
-              <item>
-               <widget class="QLineEdit" name="rightCamPathEdit"/>
-              </item>
-             </layout>
+            <item row="6" column="2">
+             <widget class="QComboBox" name="timestampTypeBox"/>
             </item>
-            <item row="10" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <item>
-               <widget class="QComboBox" name="rotateLeftBox"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_12">
-                <property name="text">
-                 <string>degrees</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item row="11" column="0">
+            <item row="12" column="0">
              <widget class="QLabel" name="label_13">
               <property name="text">
                <string>RotateRightImage</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>CalibrationFileName</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>RightCameraImagePath</string>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="2">
+             <widget class="QGroupBox" name="metadataInfoBox">
+              <property name="title">
+               <string/>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <item>
+                <widget class="QRadioButton" name="metadataYesBtn">
+                 <property name="text">
+                  <string>Yes</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="metadataNoBtn">
+                 <property name="text">
+                  <string>No</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>SubsampleMask</string>
               </property>
              </widget>
             </item>
@@ -154,108 +255,8 @@
               </property>
              </widget>
             </item>
-            <item row="11" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <item>
-               <widget class="QComboBox" name="rotateRightBox"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_14">
-                <property name="text">
-                 <string>degrees</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item row="8" column="2">
-             <widget class="QLineEdit" name="timestampStartEdit"/>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>RightCameraImagePath</string>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>ImageTimestampType</string>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="0">
-             <widget class="QLabel" name="label_10">
-              <property name="text">
-               <string>CollectMetadata</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_18">
-              <item>
-               <widget class="QLineEdit" name="calFilePathEdit"/>
-              </item>
-             </layout>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_9">
-              <property name="text">
-               <string>CalibrationFileName</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>ImageTimestampFormat</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Profile name</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QLineEdit" name="profileDescriptionEdit"/>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>FrameNumberIndices</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <item>
-               <widget class="QLineEdit" name="leftCamPathEdit"/>
-              </item>
-             </layout>
-            </item>
-            <item row="6" column="2">
-             <widget class="QComboBox" name="timestampTypeBox"/>
-            </item>
             <item row="0" column="2">
              <widget class="QLineEdit" name="profileNameEdit"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>LeftCameraImagePath</string>
-              </property>
-             </widget>
-            </item>
-            <item row="10" column="0">
-             <widget class="QLabel" name="label_11">
-              <property name="text">
-               <string>RotateLeftImage</string>
-              </property>
-             </widget>
             </item>
             <item row="5" column="2">
              <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -287,55 +288,64 @@
               </item>
              </layout>
             </item>
-            <item row="9" column="2">
-             <widget class="QGroupBox" name="metadataInfoBox">
-              <property name="title">
-               <string/>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>Profile name</string>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QRadioButton" name="metadataYesBtn">
-                 <property name="text">
-                  <string>Yes</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="metadataNoBtn">
-                 <property name="text">
-                  <string>No</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
              </widget>
             </item>
-            <item row="12" column="0">
-             <widget class="QLabel" name="label_15">
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_10">
               <property name="text">
-               <string>SubsampleMask</string>
+               <string>CollectMetadata</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>RotateLeftImage</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>ImageTimestampType</string>
               </property>
              </widget>
             </item>
             <item row="12" column="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
               <item>
-               <widget class="QLineEdit" name="subsampleMaskEdit"/>
+               <widget class="QComboBox" name="rotateRightBox"/>
               </item>
               <item>
-               <widget class="QPushButton" name="subsampleMaskBtn">
-                <property name="maximumSize">
-                 <size>
-                  <width>31</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
+               <widget class="QLabel" name="label_14">
                 <property name="text">
-                 <string>?</string>
+                 <string>degrees</string>
                 </property>
                </widget>
               </item>
              </layout>
+            </item>
+            <item row="4" column="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <item>
+               <widget class="QLineEdit" name="calFilePathEdit"/>
+              </item>
+             </layout>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>ImageFileType</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="2">
+             <widget class="QLineEdit" name="imageTypeEdit"/>
             </item>
            </layout>
           </item>
