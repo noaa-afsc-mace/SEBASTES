@@ -50,6 +50,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         self.key=None
         self.dataDB=None
+        self.projectDB=None
         self.deployment=None
         self.pairedTarget=False
         self.Habitat1=None
@@ -603,6 +604,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             if not self.deployment==None:# close out existing deployment if there is one
                 if not self.dataDB == None:
                     self.writeFrameData()
+                    self.updateProjectDB()
                     self.dataDB.dbClose()
                     self.writeDatatoCSV()
                     # must clear out everything
@@ -936,6 +938,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         
     def createNewProjectDatabase(self):
+        if not self.projectDB:
+            self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
+            self.projectDB.dbOpen()
         file=open('../db/project.db.sql')
         sql_script=file.read()
         statements=sql_script.split(';')
@@ -3064,7 +3069,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.projectDB.dbExec("DELETE FROM DEPLOYMENT WHERE Deployment_ID='"+self.deployment+"'")
             # now insert current data - a little slow?
             self.projectDB.dbExec("BEGIN TRANSACTION;")
-            self.projectDB.dbExec("ATTACH DATABASE '"+self.dataPath + self.activeProject+'_' + self.deployment+'.db'" AS DATA_DB;")
+            self.projectDB.dbExec("ATTACH DATABASE '"+self.dataPath + self.activeProject+"_" + self.deployment+".db' AS DATA_DB;")
             self.projectDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM DATA_DB.DEPLOYMENT;")
             self.projectDB.dbExec("INSERT INTO FRAMES SELECT * FROM DATA_DB.FRAMES;")
             self.projectDB.dbExec("INSERT INTO BOUNDING_BOXES SELECT * FROM DATA_DB.BOUNDING_BOXES;")
@@ -3128,6 +3133,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.appDB.dbClose()
         if self.dataDB:
             self.writeFrameData()
+            self.updateProjectDB()
             self.dataDB.dbClose()
             self.writeDatatoCSV()
         event.accept()
