@@ -51,6 +51,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.key=None
         self.dataDB=None
         self.projectDB=None
+        self.appDB=None
         self.deployment=None
         self.pairedTarget=False
         self.Habitat1=None
@@ -271,11 +272,14 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
        #self.closeup.move(position)
 
         # open and load up prfile db
-        self.appDB = dbConnection.dbConnection('../db/Application.db', '', '', label='appDB', driver="QSQLITE")
-        try:
-            self.appDB.dbOpen()
-        except:
-            self.showError()
+        if not QFile('../db/Application.db').exists():
+            QMessageBox.warning(self, "ERROR", 'The "Application.db" file is not in its expected location (SEBASTES/db folder).  Something is not right with the file setup.')
+        else:
+            self.appDB = dbConnection.dbConnection('../db/Application.db', '', '', label='appDB', driver="QSQLITE")
+            try:
+                self.appDB.dbOpen()
+            except:
+                self.showError()
         # do some stuff to gv viewer
         self.gvLeft.disableContextMenu()
         self.gvRight.disableContextMenu()
@@ -1031,6 +1035,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
 
     def showHelpImage(self):
+        if self.appDB==None:
+            self.close()
 
         #  clear the viewers
         self.gvLeft.removeScene()
@@ -2092,10 +2098,21 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.frameCommentDlg.hide()
 
     def goToLastFrame(self):
+        frameIndex=None
         query = self.dataDB.dbQuery("SELECT max(frame_number) FROM targets WHERE deployment_id='"+self.deployment+"'")
         frame, = query.first()
-        frameIndex=self.leftImageFrames.index(int(frame))
-        self.imageSlider.setValue(frameIndex)
+        if frame!=None:
+            #get my index from targets
+            frameIndex=self.leftImageFrames.index(int(frame))
+        else:
+            query = self.dataDB.dbQuery("SELECT max(frame_number) FROM frame_metadata WHERE deployment_id='"+self.deployment+"'")
+            frame, = query.first()
+            if frame!=None:
+                #get my index from targets
+                frameIndex=self.leftImageFrames.index(int(frame))
+                
+        if frameIndex:
+            self.imageSlider.setValue(frameIndex)
         
     def editSpecies(self):
         dlg=editspeciesdlg.EditSpeciesDlg(self)
@@ -3130,7 +3147,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.appSettings.setValue('GridLineThickness', str(self.gridSetup['GridLineThickness']))
 
         # write out excel file from db
-        self.appDB.dbClose()
+        if self.appDB:
+            self.appDB.dbClose()
         if self.dataDB:
             self.writeFrameData()
             self.updateProjectDB()
