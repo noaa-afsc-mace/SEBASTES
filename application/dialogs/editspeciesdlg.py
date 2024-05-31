@@ -3,6 +3,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from dialogs.ui import  ui_EditSpeciesDlg
+from datetime import datetime,  timezone
 
 
 class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
@@ -14,6 +15,8 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
         self.dataDB=parent.dataDB
         self.deployment=parent.deployment
         self.fullSpeciesList=parent.speciesList
+        self.timestamp_format=parent.timestamp_format
+        self.annotator=parent.annotator
         self.speciesList=[]
         speciesList=[]
         self.zoomLevelChange=0
@@ -72,8 +75,9 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
     def changeSpecies(self):
         if self.currentFrame and self.currentTarget:
             if self.toSpeciesBox.currentIndex()>=0:
+                dt=datetime.now(timezone.utc)
                 self.dataDB.dbExec("UPDATE targets SET species_group='"+self.toSpeciesBox.currentText()+
-                    "' WHERE deployment_id='"+self.deployment+"' AND frame_number="+self.currentFrame+" AND target_number="+self.currentTarget)
+                    "', time_stamp='"+dt.strftime(self.timestamp_format)+"', annotator = '"+self.annotator+"' WHERE deployment_id='"+self.deployment+"' AND frame_number="+self.currentFrame+" AND target_number="+self.currentTarget)
                 self.goToNextFish()
             else:
                 QMessageBox.warning(self, "ERROR", 'Select a "Change to" species.')
@@ -83,8 +87,9 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
             if reply==QMessageBox.No:
                 return
             else:
+                dt=datetime.now(timezone.utc)
                 self.dataDB.dbExec("UPDATE targets SET species_group='"+self.toSpeciesBox.currentText()+
-                    "' WHERE deployment_id='"+self.deployment+"' AND species_group='"+self.fromSpeciesBox.currentText()+"'")
+                    "' , time_stamp='"+dt.strftime(self.timestamp_format)+"', annotator = '"+self.annotator+"' WHERE deployment_id='"+self.deployment+"' AND species_group='"+self.fromSpeciesBox.currentText()+"'")
                 self.getSpeciesTargets()
         else:
             QMessageBox.warning(self, "ERROR", 'Select Speceis Options first!')

@@ -31,6 +31,16 @@ class GuiSettingDlg(QDialog, ui_GuiSettingDlg.Ui_guiSettingDlg):
         self.labelTextSizeBox.addItems(['8' , '10' , '12' , '14' , '24'])
         self.labelTextSizeBox.setCurrentIndex(self.labelTextSizeBox.findText(str(self.guiSettings['LabelTextSize']), Qt.MatchExactly))
         self.speedAdjLabel.setText(str(self.guiSettings['PlaybackSpeedAdjust']))
+        spcLabelSize=int(self.guiSettings['LabelSpeciesParam'])
+        if spcLabelSize==0:
+            self.showSpcNameCheck.setChecked(False)
+            self.spcNameLengthEdit.setText('')
+        elif spcLabelSize>0 and spcLabelSize<99:
+            self.showSpcNameCheck.setChecked(True)
+            self.spcNameLengthEdit.setText(str(spcLabelSize))
+        else:# this setting is for full name to be shown
+            self.showSpcNameCheck.setChecked(True)
+            self.spcNameLengthEdit.setText('')
         if self.guiSettings['DefaultMetadataSelection']=='retain':
             self.metaSelRetainRadio.setChecked(True)
         else:
@@ -59,6 +69,16 @@ class GuiSettingDlg(QDialog, ui_GuiSettingDlg.Ui_guiSettingDlg):
         self.guiSettings['MeasureLineTailLength']=int(self.measureLineTailLengthBox.currentText())
         self.guiSettings['BoxLineThickness']=int(self.boxLineThicknessBox.currentText())
         self.guiSettings['LabelTextSize']=int(self.labelTextSizeBox.currentText())
+        spcLabelSize=0
+        if self.showSpcNameCheck.isChecked():
+            try:
+                if self.spcNameLengthEdit.text()=='':
+                    spcLabelSize=99
+                else:
+                    spcLabelSize=int(self.spcNameLengthEdit.text())
+            except:
+                pass
+        self.guiSettings['LabelSpeciesParam']=spcLabelSize
         self.guiSettings['SceneColor']=self.sceneCol.getRgb()[0:3]
         self.guiSettings['TargetLineColor']=self.tLineCol.getRgb()[0:3]
         if self.metaSelRetainRadio.isChecked():

@@ -15,7 +15,7 @@ import glob
 import re
 import random
 import distutils.util
-from datetime import datetime
+from datetime import datetime,  timezone
 from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg, annotatorDlg
 from exif import Image
 
@@ -45,6 +45,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.defaultMetadataGroup='CamTrawl_metadata'
         self.randomCellBounds=None
         self.annotator=None
+        self.timestamp_format='%Y-%m-%d %H:%M:%S'
 
 #        self.keystrokeMap={}
 
@@ -244,6 +245,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.guiSettings.update({'SceneColor':self.rgbStr2Lists(self.appSettings.value('SceneColor', '255,0,0'))})
         self.guiSettings.update({'BoxLineThickness':int(self.appSettings.value('BoxLineThickness', 1))})
         self.guiSettings.update({'LabelTextSize':int(self.appSettings.value('LabelTextSize', 12))})
+        self.guiSettings.update({'LabelSpeciesParam':int(self.appSettings.value('LabelSpeciesParam', 0))})
         self.guiSettings.update({'ShowClassOnLabel':self.appSettings.value('ShowClassOnLabel', 'false')})
         self.guiSettings.update({'DefaultMetadataSelection':self.appSettings.value('DefaultMetadataSelection','clear')})
         self.guiSettings.update({'RetainSpeciesSelection':self.appSettings.value('RetainSpeciesSelection','clear')})
@@ -406,7 +408,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         try:
             # settings
             self.settings={}
-            query=self.appDB.dbQuery("SELECT setting, value FROM PROFILE_SETTINGS WHERE profile='"+self.activeProfile+"'")
+            query=self.appDB.dbQuery("SELECT setting, value as val FROM PROFILE_SETTINGS WHERE profile='"+self.activeProfile+"'")
             for parameter, value in query:
                 self.settings.update({parameter:value})
 
@@ -676,8 +678,17 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
                     self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
                     self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
+                    
+                # check for timastamp field in db, if not, add it
+                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+                fields=[]
+                for field in query:
+                    fields.append(field[1])
+                if not 'TIME_STAMP' in fields:
+                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
 
-            else:# a new db file is needed - this is the first tiem we are opening this drop
+            else:# a new db file is needed - this is the first time we are opening this drop
                 # make the folder
                 QDir().mkdir(self.dataPath)
                 try:
@@ -764,11 +775,16 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         except:
             self.showError()
             self.close()
-        
+        # open the project db
+        if not self.projectDB:
+            if QFile(self.projectDBPath  +"/"+ self.projectDict['project']+'.db').exists():
+                self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
+                self.projectDB.dbOpen()
+            else:
+                QMessageBox.warning(self, "ERROR", "Can't open project database.")
+                return 
         # make sure proj db has annotator?
         try:
-            self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
-            self.projectDB.dbOpen()
             # check for annotator field in db, if not, add it
             query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
             fields=[]
@@ -779,12 +795,25 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
                 self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
                 self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
-            self.projectDB.dbClose()
+                # check for timastamp field in db, if not, add it
+                query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
+                fields=[]
+                for field in query:
+                    fields.append(field[1])
+                if not 'TIME_STAMP' in fields:
+                    self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
+                    self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
         except:
             self.showError()
             self.close()
         
-        # now insert data from teh proj to the local
+        # now insert data from the proj to the local
+        query=self.projectDB.dbQuery("SELECT DEPLOYMENT_ID FROM DEPLOYMENT WHERE DEPLOYMENT_ID = '"+self.deployment+"'")
+        dep_check, =query.first()
+        if not dep_check:
+            QMessageBox.warning(self, "ERROR", "Can't create local database.")
+            return 
+        
         self.dataDB.dbExec("BEGIN TRANSACTION;")
         self.dataDB.dbExec("ATTACH DATABASE '"+self.projectDBPath  +"/"+ self.projectDict['project']+".db' AS PROJ_DB;")
         self.dataDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM PROJ_DB.DEPLOYMENT WHERE DEPLOYMENT_ID='"+self.deployment+"';")
@@ -1575,7 +1604,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
                         marker = imageObj.addMark(clickLoc, style=style, color=col,
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                        marker.addLabel(str(self.currentTarget), color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                        spcLabel=''
+                        if self.guiSettings['LabelSpeciesParam']>0:
+                            spcLabel=self.spcButtons[self.spcInd].text()
+                            if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                                spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+
+                        marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
                         if not self.labelCheck.isChecked():
                             marker.hideLabels(None)
 
@@ -1631,7 +1666,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                     # crate mark for other side
                                     self.theOtherTarget = otherObj.addMark(QPoint(point_c[0][0], point_c[0][1]), style=style, color=col,
                                               size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                                    self.theOtherTarget.addLabel(str(self.currentTarget), color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                                    self.theOtherTarget.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
                                     if not self.labelCheck.isChecked():
                                         self.theOtherTarget.hideLabels(None)
                                     self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
@@ -1661,8 +1696,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         tClass='SceneRange'
                                     else: # animal target
                                         tClass=self.spcButtons[self.spcInd].text()
-                                    self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator)  "+
-                                    "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"')")
+                                    dt=datetime.now(timezone.utc)
+                                    self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
+                                    "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                     self.pairPoints=[]
                                     if self.rangeBtn.isChecked():
                                         self.rangeBtn.setChecked(False)
@@ -1719,8 +1755,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                     tClass='SceneRange'
                                 else: # animal target
                                     tClass=self.spcButtons[self.spcInd].text()
-                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator)  "+
-                                "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"')")
+                                dt=datetime.now(timezone.utc)
+                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
+                                "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                 self.pairPoints=[]
                                 if self.rangeBtn.isChecked():
                                     self.rangeBtn.setChecked(False)
@@ -1759,9 +1796,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                 points=str(clickLoc.x())+","+str(clickLoc.y())+",NULL,NULL"
                             else:
                                 points="NULL,NULL,"+str(clickLoc.x())+","+str(clickLoc.y())
-
-                            self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"')")
+                            dt=datetime.now(timezone.utc)
+                            self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator, time_stamp)"+
+                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"','"+
+                            dt.strftime(self.timestamp_format)+"')")
                             self.pairedTarget=False
                             if self.showDataCheck.isChecked():
                                 self.datadlg.refreshView()
@@ -1818,7 +1856,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 #  and add a label - polygon labels are attached to the vertices and the first
                 #  argument is the index of the vertex you want to attach the label to. For
                 #  rubber band boxes, the verts are always ordered clockwise from the upper left
-                boxObj.addLabel(0, str(self.currentBBoxTarget), size=self.guiSettings['LabelTextSize'],  color=self.spcColors[self.spcInd])
+                spcLabel=''
+                if self.guiSettings['LabelSpeciesParam']>0:
+                    spcLabel=self.spcButtons[self.spcInd].text()
+                    if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                        spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+
+                boxObj.addLabel(0, str(self.currentBBoxTarget)+" "+spcLabel, size=self.guiSettings['LabelTextSize'],  color=self.spcColors[self.spcInd])
                 BoxCoords=rubberbandObj.toRect()
                 self.rubberBanding = False
                 # this would be where we write the results
@@ -1902,7 +1946,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         # add a marker in the middle of the line that you can select and delete
                         marker = self.gvLeft.addMark(QPointF(LX, LY), style='d', color=self.guiSettings['SceneColor'],
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                        marker.addLabel(str(self.currentTarget), color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                        # create label
+                        spcLabel=''
+                        if self.guiSettings['LabelSpeciesParam']>0:
+                            spcLabel=self.spcButtons[self.spcInd].text()
+                            if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                                spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+                        marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
                         self.activeMark [self.gvLeft]=marker
                         self.pointMarks.update({marker:[self.currentTarget,  self.gvLeft]})
 
@@ -1913,9 +1963,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         if not self.labelCheck.isChecked():
                             marker.hideLabels(None)
                         self.pairedTarget=True
+                        dt=datetime.now(timezone.utc)
                         self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX,LY,RX,RY,Length, Range, Error,  LHX, LHY, LTX, LTY, RHX, RHY,"+
-                          "RTX, RTY, hx, hy, hz, tx, ty, tz, comment, annotator) VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'SceneMeasurement',"+str(LX)+","+str(LY)+
-                          ","+str(RX)+","+str(RY)+valstring+",'','"+self.annotator+"')")
+                          "RTX, RTY, hx, hy, hz, tx, ty, tz, comment, annotator, time_stamp) VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'SceneMeasurement',"+str(LX)+","+str(LY)+
+                          ","+str(RX)+","+str(RY)+valstring+",'','"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                         self.measureScBtn.setChecked(False)
                 else: # line is drawn on only one side
                     if self.computeMatchBox.isChecked():
@@ -2118,6 +2169,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         dlg=editspeciesdlg.EditSpeciesDlg(self)
         dlg.goToTargetEvent.connect(self.changeSelectionFromTable)
         dlg.exec_()
+        self.__changeImage()
     
     def changeSelectionFromTable(self, frame, target, zoom=None):
         frameIndex=self.leftImageFrames.index(frame)
@@ -2339,8 +2391,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.dataDB.dbExec("UPDATE frames SET comment='"+comment+"', annotator='"+current_tators+"' WHERE frame_number="+self.frameBox.text()+
                 "  AND deployment_ID='"+self.deployment+"'")
             else:
-                self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment, annotator)"+
-                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','','"+self.annotator+"')")
+                dt=datetime.now(timezone.utc)
+                self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment, annotator, time_stamp)"+
+                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','','"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
                 # now we write metadata
                 self.dataDB.dbExec("DELETE FROM FRAME_METADATA WHERE frame_number="+self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND deployment_ID='"+self.deployment+"'")
@@ -2432,7 +2485,12 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 #  and add a label - polygon labels are attached to the vertices and the first
                 #  argument is the index of the vertex you want to attach the label to. For
                 #  rubber band boxes, the verts are always ordered clockwise from the upper left
-                boxObj.addLabel(0, target_number, color=col, size=self.guiSettings['LabelTextSize'])
+                spcLabel=''
+                if self.guiSettings['LabelSpeciesParam']>0:
+                    spcLabel=species_group
+                    if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                        spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+                boxObj.addLabel(0, target_number+" "+spcLabel, color=col, size=self.guiSettings['LabelTextSize'])
 
         else:
             # get frame level annotator
@@ -2455,6 +2513,11 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
             targetToDelete=[]
             for target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY in query:
+                spcLabel=''
+                if self.guiSettings['LabelSpeciesParam']>0:
+                    spcLabel=species_group
+                    if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                        spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
                 # find out the class and appropriate color
                 if species_group in ['SceneRange',  'SceneMeasurement']:
                     col=self.guiSettings['SceneColor']
@@ -2476,14 +2539,16 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
 
                     self.pointMarks.update({marker:[int(target_number),  self.gvLeft]})
-                    marker.addLabel(target_number, color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+
+                    marker.addLabel(target_number+" "+spcLabel, color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
                     if not self.labelCheck.isChecked():
                         marker.hideLabels(None)
 
                 elif LX==None and RX!=None:# this is in the right image only target
                     marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style='+', color=col,
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                    marker.addLabel(target_number , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                    
+                    marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
                     self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
                     if not self.labelCheck.isChecked():
                         marker.hideLabels(None)
@@ -2492,7 +2557,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style=style, color=col,
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
                     self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
-                    marker.addLabel(target_number , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                    marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
                     if not self.labelCheck.isChecked():
                         marker.hideLabels(None)
                     marker = self.gvLeft.addMark(QPointF(float(LX), float(LY)), style=style, color=col,
@@ -2501,7 +2566,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     targetLabel=target_number +" r = "+str(round(float(Range), 2))+"  e = "+str(round(float(Error), 2))
                     if self.guiSettings['ShowClassOnLabel']=='true':
                         targetLabel=targetLabel+' '+species_group
-                    marker.addLabel(targetLabel, color=col,size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                    marker.addLabel(targetLabel+" "+spcLabel, color=col,size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
                     if not self.labelCheck.isChecked():
                         marker.hideLabels(None)
                 # put on measurements as well
@@ -3051,32 +3116,43 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.showError()
             
     def updateProjectDB(self):
-        #  check if the SQLite database file exists
-        if QFile(self.projectDBPath + "/"+self.projectDict['project']+ '.db').exists():
-            #  try to open the database file
-            try:
-                self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
-                self.projectDB.dbOpen()
-                # check for annotator field in db, if not, add it
-                query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
-                fields=[]
-                for field in query:
-                    fields.append(field[1])
-                if not 'ANNOTATOR' in fields:
-                    self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
-                    self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
-                    self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
-                    self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
-            except:
-                QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
-                self.showError()
+        if self.projectDB:
+            if not self.projectDB.db.isOpen():
+            #  check if the SQLite database file exists
+                try:
+                    if QFile(self.projectDBPath + "/"+self.projectDict['project']+ '.db').exists():
+                        #  try to open the database file
+                        self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
+                        self.projectDB.dbOpen()
+                
+                except:
+                    QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
+                    self.showError()
             
         else:# need a new one
-            
             self.createNewProjectDatabase()
             
-        try:
+        # check for annotator field in db, if not, add it
+        query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
+        fields=[]
+        for field in query:
+            fields.append(field[1])
+        if not 'ANNOTATOR' in fields:
+            self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
+            self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
+            self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
+            self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
             
+        # check for timastamp field in db, if not, add it
+        query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
+        fields=[]
+        for field in query:
+            fields.append(field[1])
+        if not 'TIME_STAMP' in fields:
+            self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
+            self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
+
+        try:
             # here's a new step - update project db?
             # delete current deplyment from project database
             self.projectDB.dbExec("DELETE FROM FRAME_METADATA WHERE Deployment_ID='"+self.deployment+"'")
@@ -3130,6 +3206,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.appSettings.setValue('SceneColor', colstr)
         self.appSettings.setValue('BoxLineThickness', self.guiSettings['BoxLineThickness'])
         self.appSettings.setValue('LabelTextSize', self.guiSettings['LabelTextSize'])
+        self.appSettings.setValue('LabelSpeciesParam', self.guiSettings['LabelSpeciesParam'])
         self.appSettings.setValue('ShowClassOnLabel', self.guiSettings['ShowClassOnLabel'])
         self.appSettings.setValue('DefaultMetadataSelection', self.guiSettings['DefaultMetadataSelection'])
         self.appSettings.setValue('RetainSpeciesSelection', self.guiSettings['RetainSpeciesSelection'])
