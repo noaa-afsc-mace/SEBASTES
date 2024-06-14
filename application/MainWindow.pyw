@@ -51,7 +51,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         self.key=None
         self.dataDB=None
-        self.projectDB=None
         self.appDB=None
         self.deployment=None
         self.pairedTarget=False
@@ -605,15 +604,14 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.deploymentPath=self.bkpDepPath # get us back where we were
                 return
                 
-
         else:
             if not self.deployment==None:# close out existing deployment if there is one
                 if not self.dataDB == None:
                     self.writeFrameData()
-                    self.updateProjectDB()
                     self.dataDB.dbClose()
                     self.writeDatatoCSV()
                     # must clear out everything
+                    self.activeProfile=None
             #  update the application settings with the data directory
 
             self.deployment = self.deploymentPath.split('/')[-1]
@@ -631,30 +629,16 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 return 
 
             #  check if the database folder exists
-            self.projectDBPath=self.projectDict['database_path']
             self.speciesCollection=self.projectDict['species_collection']
             self.metadataGroup=self.projectDict['metadata_group']
-            if not QDir(self.projectDBPath).exists():
-                reply=QMessageBox.warning(self, "ERROR", "The folder specified for this project doesn't exist.  Would you like to try and re-link the database now?",  QMessageBox.Yes, QMessageBox.No)
-                if reply==QMessageBox.Yes:
-                    # file dialog again
-                    dirDlg = QFileDialog(self)
-                    dlg.selectedProjectDict['database_path'] = dirDlg.getExistingDirectory(self, 'Select Project Database Directory', self.__dataDir,
-                                                          QFileDialog.ShowDirsOnly)
-                    # write this to db
-                    self.appDB.dbExec("UPDATE PROJECTS SET DATABASE_PATH='"+dlg.selectedProjectDict['database_path']+"' WHERE PROJECT='"+self.projectDict['project']+"'")
-                    self.projectDBPath=dlg.selectedProjectDict['database_path']
-                else:
-                    return # no load
 
-                # check for existing profile in profile db
-            ################   HERE we will open a local "data db", which we will merge with the project at teh end  ######################
+            ################   HERE we will open a local "data db" ######################
             self.dataPath = self.sourcePath.path()+ '/' +self.deployment + '/' + "data" + '/'
             #  check if the local SQLite database file exists
             if QDir(self.dataPath).exists():
                 #  check if the SQLite database file exists
                 if QFile(self.dataPath + self.activeProject+'_' + self.deployment+'.db').exists():
-                    #  try to open the metadata files
+                    #  try to open the database
                     try:
                         self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
                     except:
@@ -665,9 +649,26 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         self.dataDB.dbOpen()
                     except:
                         self.showError()
-                        self.close()
-                else: # this is the xcase where we used project db for data, now we need to create a local data db from teh project one
-                    self.reconstructDataDB()
+                        return
+                
+                elif QFile(self.dataPath +  self.deployment+'.db').exists():# legacy database
+                    # rename file to current db naming convention with the project 
+                    QFile().rename(self.dataPath +  self.deployment+'.db', self.dataPath + self.activeProject+'_' + self.deployment+'.db')
+                    #  try to open the database
+                    try:
+                        self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
+                    except:
+                        QMessageBox.warning(self, "ERROR", "There's something amiss with the data folder. You need to clear this up to access this deployment.")
+                        return
+                    # check for existing profile in profile db
+                    try:
+                        self.dataDB.dbOpen()
+                    except:
+                        self.showError()
+                        return
+                else:
+                    QMessageBox.warning(self, "ERROR", "There's something amiss with the data folder. I can't find a .db folder.")
+                    return
                 # check for annotator field in db, if not, add it
                 query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
                 fields=[]
@@ -701,7 +702,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         return 
                 except:
                     self.showError()
-                    self.close()
+                    return
                         
             # now select profile
             if not self.activeProfile:
@@ -716,15 +717,11 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
                     dlg=makeseldlg.MakeSelDlg(self,  'profile', 'active')
                     if dlg.exec_():
-                        if dlg.new:
-                            QMessageBox.warning(self, "INFO", "Please go to profile stup and get this setup before you can analyze data.")
-                            return 
-                        else:
-                            self.activeProfile=dlg.value
-                            # put it into the db
-                            time_now=QDateTime().currentDateTime()
-                            self.dataDB.dbExec("INSERT INTO deployment (project, deployment_ID,last_opened,profile)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"','"+time_now.toString()+"','"+self.activeProfile+"')")
+                        self.activeProfile=dlg.value
+                        # put it into the db
+                        time_now=QDateTime().currentDateTime()
+                        self.dataDB.dbExec("INSERT INTO deployment (project, deployment_ID,last_opened,profile)"+
+                        " VALUES('"+self.activeProject+"', '"+self.deployment+"','"+time_now.toString()+"','"+self.activeProfile+"')")
 
                     else:
                         QMessageBox.warning(self, "ERROR", "Need a profile to work.")
@@ -762,67 +759,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         except:
             pass
     
-    def reconstructDataDB(self):
-        try:
-            # create database - folder should be there already
-            self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
-            self.dataDB.dbOpen()
-            if self.dataDB.db.isOpen():
-                self.makeDB()
-            else:
-                QMessageBox.warning(self, "ERROR", "Can't create local database.")
-                return 
-        except:
-            self.showError()
-            self.close()
-        # open the project db
-        if not self.projectDB:
-            if QFile(self.projectDBPath  +"/"+ self.projectDict['project']+'.db').exists():
-                self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
-                self.projectDB.dbOpen()
-            else:
-                QMessageBox.warning(self, "ERROR", "Can't open project database.")
-                return 
-        # make sure proj db has annotator?
-        try:
-            # check for annotator field in db, if not, add it
-            query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
-            fields=[]
-            for field in query:
-                fields.append(field[1])
-            if not 'ANNOTATOR' in fields:
-                self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
-                self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
-                self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
-                self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
-                # check for timastamp field in db, if not, add it
-                query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
-                fields=[]
-                for field in query:
-                    fields.append(field[1])
-                if not 'TIME_STAMP' in fields:
-                    self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
-                    self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
-        except:
-            self.showError()
-            self.close()
         
-        # now insert data from the proj to the local
-        query=self.projectDB.dbQuery("SELECT DEPLOYMENT_ID FROM DEPLOYMENT WHERE DEPLOYMENT_ID = '"+self.deployment+"'")
-        dep_check, =query.first()
-        if not dep_check:
-            QMessageBox.warning(self, "ERROR", "Can't create local database.")
-            return 
-        
-        self.dataDB.dbExec("BEGIN TRANSACTION;")
-        self.dataDB.dbExec("ATTACH DATABASE '"+self.projectDBPath  +"/"+ self.projectDict['project']+".db' AS PROJ_DB;")
-        self.dataDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM PROJ_DB.DEPLOYMENT WHERE DEPLOYMENT_ID='"+self.deployment+"';")
-        self.dataDB.dbExec("INSERT INTO FRAMES SELECT * FROM PROJ_DB.FRAMES WHERE DEPLOYMENT_ID='"+self.deployment+"';")
-        self.dataDB.dbExec("INSERT INTO BOUNDING_BOXES SELECT * FROM PROJ_DB.BOUNDING_BOXES WHERE DEPLOYMENT_ID='"+self.deployment+"';")
-        self.dataDB.dbExec("INSERT INTO TARGETS SELECT * FROM PROJ_DB.TARGETS WHERE DEPLOYMENT_ID='"+self.deployment+"';")
-        self.dataDB.dbExec("INSERT INTO FRAME_METADATA SELECT * FROM PROJ_DB.FRAME_METADATA WHERE DEPLOYMENT_ID='"+self.deployment+"';")
-        self.dataDB.dbExec("COMMIT;")
-        self.dataDB.dbExec("DETACH DATABASE PROJ_DB;")
 
         
     def setupDeployment(self):
@@ -962,28 +899,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         statements=sql_script.split(';')
         for statement in statements:
             if statement !='':
-                statement=statement.replace('\t', '')
+                statement=statement.replace('\t', ' ')
                 statement=statement.replace('\n', '')
                 try:
                     self.dataDB.dbExec(statement)
                 except:
                     pass
 
-        
-    def createNewProjectDatabase(self):
-        if not self.projectDB:
-            self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
-            self.projectDB.dbOpen()
-        file=open('../db/project.db.sql')
-        sql_script=file.read()
-        statements=sql_script.split(';')
-        for statement in statements:
-            statement=statement.replace('\t', '')
-            statement=statement.replace('\n', '')
-            try:
-                self.projectDB.dbExec(statement)
-            except:
-                print(statement)
 
     def getImageFiles(self,  imPath,  progressbar):
         try:
@@ -2776,13 +2698,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.targetStereoData=[length, Range, error,  LHX, LHY,LTX,LTY, RHX, RHY,RTX,RTY,lhx, lhy, lhz,ltx,lty, ltz]
 
     def recompute3D(self):
-        
-        reply=QMessageBox.warning(self, "WARNING", "Do you want to recompute 3D locations for entire project database?/n If only for this haul press No.",  QMessageBox.Yes, QMessageBox.No)
-        if reply==QMessageBox.Yes:
-            sql=("SELECT deployment_id, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets")
-        else:
-            sql=("SELECT deployment_id, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets WHERE deployment_id='"+self.deployment+"'")
-        
+        sql=("SELECT deployment_id, frame_number, target_number, LX, LY, RX, RY, LHX, LHY, LTX, LTY,  RHX, RHY, RTX, RTY FROM targets")
         try:
             self.targetPosition=[None,  None]
             from QImageViewer import QIVDimensionLine
@@ -2798,7 +2714,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         #self.targetStereoData=[range, error,  lx, ly, lz]
                         sql=("UPDATE targets SET Range = "+str(self.targetStereoData[0])+",  Error = "+str(self.targetStereoData[1])+",  hx = "+
                         str(self.targetStereoData[2])+",  hy = "+str(self.targetStereoData[3])+",  hz = "+str(self.targetStereoData[4])+" WHERE frame_number = "+
-                        frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+deployment+"'")
+                        frame_number+" AND target_number="+target_number)
                         self.dataDB.dbExec(sql)
                 else:
                     dimLine = QIVDimensionLine.QIVDimensionLine(startPoint=QPointF(float(LHX), float(LHY)), endPoint=QPointF(float(LTX), float(LTY)), color=self.guiSettings['TargetLineColor'],
@@ -2814,7 +2730,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.dataDB.dbExec("UPDATE targets SET Length = "+str(self.targetStereoData[0])+", Range = "+str(self.targetStereoData[1])+",  Error = "+str(self.targetStereoData[2])+",  hx = "+
                     str(self.targetStereoData[11])+",  hy = "+str(self.targetStereoData[12])+",  hz = "+str(self.targetStereoData[13])+", tx = "+
                     str(self.targetStereoData[14])+", ty = "+str(self.targetStereoData[15])+", tz = "+str(self.targetStereoData[16])+" WHERE frame_number = "+
-                    frame_number+" AND target_number="+target_number+"  AND deployment_ID='"+deployment+"'")
+                    frame_number+" AND target_number="+target_number)
             QMessageBox.warning(self, "INFO", "Positions have been recalculated :-)")
             self.__changeImage()
         except:
@@ -3114,66 +3030,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             ny.save(self.sourcePath.path() + '/' + self.deployment + '/' + "data" + '/' + self.deployment+'_image_adjustments', imageadjustments)
         except:
             self.showError()
-            
-    def updateProjectDB(self):
-        if self.projectDB:
-            if not self.projectDB.db.isOpen():
-            #  check if the SQLite database file exists
-                try:
-                    if QFile(self.projectDBPath + "/"+self.projectDict['project']+ '.db').exists():
-                        #  try to open the database file
-                        self.projectDB = dbConnection.dbConnection(self.projectDBPath  +"/"+ self.projectDict['project']+'.db', '', '',label='projDB', driver="QSQLITE")
-                        self.projectDB.dbOpen()
-                
-                except:
-                    QMessageBox.warning(self, "ERROR", "There's something amiss with the database for this project.")
-                    self.showError()
-            
-        else:# need a new one
-            self.createNewProjectDatabase()
-            
-        # check for annotator field in db, if not, add it
-        query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
-        fields=[]
-        for field in query:
-            fields.append(field[1])
-        if not 'ANNOTATOR' in fields:
-            self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
-            self.projectDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
-            self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
-            self.projectDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
-            
-        # check for timastamp field in db, if not, add it
-        query = self.projectDB.dbQuery("PRAGMA table_info('TARGETS')")
-        fields=[]
-        for field in query:
-            fields.append(field[1])
-        if not 'TIME_STAMP' in fields:
-            self.projectDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
-            self.projectDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
-
-        try:
-            # here's a new step - update project db?
-            # delete current deplyment from project database
-            self.projectDB.dbExec("DELETE FROM FRAME_METADATA WHERE Deployment_ID='"+self.deployment+"'")
-            self.projectDB.dbExec("DELETE FROM TARGETS WHERE Deployment_ID='"+self.deployment+"'")
-            self.projectDB.dbExec("DELETE FROM BOUNDING_BOXES WHERE Deployment_ID='"+self.deployment+"'")
-            self.projectDB.dbExec("DELETE FROM FRAMES WHERE Deployment_ID='"+self.deployment+"'")
-            self.projectDB.dbExec("DELETE FROM DEPLOYMENT WHERE Deployment_ID='"+self.deployment+"'")
-            # now insert current data - a little slow?
-            self.projectDB.dbExec("BEGIN TRANSACTION;")
-            self.projectDB.dbExec("ATTACH DATABASE '"+self.dataPath + self.activeProject+"_" + self.deployment+".db' AS DATA_DB;")
-            self.projectDB.dbExec("INSERT INTO DEPLOYMENT SELECT * FROM DATA_DB.DEPLOYMENT;")
-            self.projectDB.dbExec("INSERT INTO FRAMES SELECT * FROM DATA_DB.FRAMES;")
-            self.projectDB.dbExec("INSERT INTO BOUNDING_BOXES SELECT * FROM DATA_DB.BOUNDING_BOXES;")
-            self.projectDB.dbExec("INSERT INTO TARGETS SELECT * FROM DATA_DB.TARGETS;")
-            self.projectDB.dbExec("INSERT INTO FRAME_METADATA SELECT * FROM DATA_DB.FRAME_METADATA;")
-            self.projectDB.dbExec("COMMIT;")
-            self.projectDB.dbExec("DETACH DATABASE DATA_DB;")
-        except:
-            self.showError()
-            
-            
+           
 
     def rgbStr2Lists(self,  rgbstr):
         try:
@@ -3228,7 +3085,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.appDB.dbClose()
         if self.dataDB:
             self.writeFrameData()
-            self.updateProjectDB()
             self.dataDB.dbClose()
             self.writeDatatoCSV()
         event.accept()

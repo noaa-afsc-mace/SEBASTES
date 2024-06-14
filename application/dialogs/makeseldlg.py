@@ -12,7 +12,6 @@ class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
         
         self.selectBtn.clicked.connect(self.exit)
         self.cancelBtn.clicked.connect(self.cancel)
-        self.newBtn.clicked.connect(self.exit)
         self.mode=mode
         self.action=action
         self.value=None
@@ -78,12 +77,8 @@ class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
         
     @pyqtSlot()
     def exit(self):
-        if self.sender()==self.newBtn:
-            self.new=True
-            self.accept()
-        else:
-            if self.value==None:
-                QMessageBox.warning(self, "ERROR", "Ya didn't select anythin'!")
-                self.reject()
+        if self.value==None:
+            QMessageBox.warning(self, "ERROR", "Ya didn't select anythin'!")
+            self.reject()
 
         self.accept()

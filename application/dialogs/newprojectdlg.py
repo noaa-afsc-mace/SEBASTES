@@ -11,7 +11,6 @@ class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
         self.appDB=parent.appDB
         self.okBtn.clicked.connect(self.exitCheck)
         self.cancelBtn.clicked.connect(self.cancel)
-        self.findPathBtn.clicked.connect(self.findDBPath)
         self.bad=False
         self.populateBoxWidgets()
         
@@ -26,11 +25,6 @@ class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
         self.metadataBox.setCurrentIndex(-1)
         self.yesRadio.setChecked(True)
         
-    def findDBPath(self):
-        dirDlg = QFileDialog(self)
-        dbPath = dirDlg.getExistingDirectory(self, 'Select project database directory', 'C:\\',
-                                              QFileDialog.ShowDirsOnly)
-        self.dbLocEdit.setText(dbPath)
         
     def insertProject(self):
         desc=self.descEdit.toPlainText()
@@ -44,8 +38,8 @@ class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
             QMessageBox.warning(self, "ERROR", 'Select species and metadata!')
             self.bad=True
             return
-        query=self.appDB.dbExec("INSERT INTO PROJECTS (PROJECT, DESCRIPTION,  DATABASE_PATH,  SPECIES_COLLECTION,  METADATA_GROUP,  ACTIVE) VALUES("+
-        "'"+self.projNameEdit.text()+"', '"+desc+"', '"+self.dbLocEdit.text()+"', '"+self.speciesBox.currentText()+"', '"+self.metadataBox.currentText()+"', '"+active+"')")
+        query=self.appDB.dbExec("INSERT INTO PROJECTS (PROJECT, DESCRIPTION, DATABASE_PATH, SPECIES_COLLECTION,  METADATA_GROUP,  ACTIVE) VALUES("+
+        "'"+self.projNameEdit.text()+"', '"+desc+"', 'NA', '"+self.speciesBox.currentText()+"', '"+self.metadataBox.currentText()+"', '"+active+"')")
         # make sure it happened and tell folks so
         query1=self.appDB.dbQuery("SELECT PROJECT FROM PROJECTS WHERE PROJECT='"+self.projNameEdit.text()+"'")
         if query1.first():

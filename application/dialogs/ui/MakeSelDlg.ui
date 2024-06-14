@@ -56,13 +56,6 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QPushButton" name="newBtn">
-       <property name="text">
-        <string>New</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </item>
   </layout>
