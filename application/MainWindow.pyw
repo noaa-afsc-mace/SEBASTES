@@ -688,6 +688,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 if not 'TIME_STAMP' in fields:
                     self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
                     self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
+                    
+                # check for timastamp field in db, if not, add it
+                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+                fields=[]
+                for field in query:
+                    fields.append(field[1])
+                if not 'PROJECT' in fields:
+                    self.dataDB.dbExec("ALTER TABLE DEPLOYMENT ADD COLUMN PROJECT TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN PROJECT TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN PROJECT TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN PROJECT TEXT;")
+                    self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN PROJECT TEXT;")
 
             else:# a new db file is needed - this is the first time we are opening this drop
                 # make the folder
