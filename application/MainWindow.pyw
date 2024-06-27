@@ -16,7 +16,7 @@ import re
 import random
 import distutils.util
 from datetime import datetime,  timezone
-from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg, annotatorDlg
+from dialogs import speciesgroupdlg, closeupdlg, dataviewdlg, commentdlg, editspeciesdlg, framecommentdlg,  makeseldlg,  profilesetupdlg,  guisettingdlg,  selectprojectdlg, annotatorDlg, viewapplicationdbdlg,  directeditDBdlg
 from exif import Image
 
 class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
@@ -178,6 +178,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.actionSet_Active_Profiles.triggered.connect(self.setActiveProfiles)
         self.actionImport_Export_Profiles.triggered.connect(self.importExportProfiles)
         self.actionCreate_New_Project.triggered.connect(self.createNewProject)
+        self.actionviewApplicationDB.triggered.connect(self.viewApplicationDB)
+        self.actionedit_DB_tables.triggered.connect(self.directEditDBTables)
         self.playSpeedSlider.valueChanged.connect(self.speedSet)
         self.imageSlider.valueChanged.connect( self.__changeImage)
         
@@ -992,7 +994,13 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         except:
             self.showError()
 
-
+    def viewApplicationDB(self):
+        dlg=viewapplicationdbdlg.ViewApplicationDBDlg(self)
+        dlg.exec_()
+        
+    def directEditDBTables(self):
+        dlg=directeditDBdlg.DirectEditDBDlg(self)
+        dlg.exec_()
 ##############################2. GV FUNCTIONS ######################################
 
 

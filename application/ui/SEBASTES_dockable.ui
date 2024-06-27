@@ -490,6 +490,8 @@ sampled frame</string>
     <addaction name="actionGrid_setup"/>
     <addaction name="actionSet_Active_Profiles"/>
     <addaction name="actionImport_Export_Profiles"/>
+    <addaction name="actionviewApplicationDB"/>
+    <addaction name="actionedit_DB_tables"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -2222,6 +2224,22 @@ frame</string>
    </property>
    <property name="toolTip">
     <string>create new projects</string>
+   </property>
+  </action>
+  <action name="actionviewApplicationDB">
+   <property name="text">
+    <string>view Application DB</string>
+   </property>
+   <property name="toolTip">
+    <string>view teh application level database (read only)</string>
+   </property>
+  </action>
+  <action name="actionedit_DB_tables">
+   <property name="text">
+    <string>edit DB tables</string>
+   </property>
+   <property name="toolTip">
+    <string>edit databaset tables</string>
    </property>
   </action>
  </widget>

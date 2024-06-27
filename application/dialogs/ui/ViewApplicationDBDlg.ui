@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>viewApplicationDB</class>
+ <widget class="QDialog" name="viewApplicationDB">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>681</width>
+    <height>542</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="tabs">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="projects">
+      <attribute name="title">
+       <string>Projects</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QTableView" name="projectsView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="profiles">
+      <attribute name="title">
+       <string>Profiles</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QTableView" name="profilesView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="profile_settings">
+      <attribute name="title">
+       <string>Profile Settings</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QTableView" name="profileSettingsView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="metadata_groups">
+      <attribute name="title">
+       <string>Metadata Groups</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QTableView" name="metadataGroupsView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="frame_metadata_setup">
+      <attribute name="title">
+       <string>Frame Metadata Setup</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_6">
+       <item>
+        <widget class="QTableView" name="frameMetadataSetupView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="species_collections">
+      <attribute name="title">
+       <string>Species Collections</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <item>
+        <widget class="QTableView" name="speciesCollectionsView"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="species_setup">
+      <attribute name="title">
+       <string>Species Setup</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_8">
+       <item>
+        <widget class="QTableView" name="speciesSetupView"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
