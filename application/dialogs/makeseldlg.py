@@ -25,8 +25,6 @@ class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
         self.viewSelModel.selectionChanged.connect(self.selectionAction)
         
         
-        if action=='imp_exp':
-            self.newBtn.setEnabled(False)
         self.appDB=parent.appDB
         self.loadView()
         if mode=='profile':
