@@ -625,6 +625,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             dlg=selectprojectdlg.SelectProjectDlg(self)
             if dlg.exec_():
                 self.activeProject=dlg.selectedProject
+                if self.activeProject==None:
+                    QMessageBox.warning(self, "ERROR", "You have to select a Project to load deployment.")
+                    return 
                 self.projectDict=dlg.selectedProjectDict
             else:
                 QMessageBox.warning(self, "ERROR", "You have to select a Project to load deployment.")
@@ -668,41 +671,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     except:
                         self.showError()
                         return
-                else:
-                    QMessageBox.warning(self, "ERROR", "There's something amiss with the data folder. I can't find a .db folder.")
-                    return
-                # check for annotator field in db, if not, add it
-                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
-                fields=[]
-                for field in query:
-                    fields.append(field[1])
-                if not 'ANNOTATOR' in fields:
-                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
-                    
-                # check for timastamp field in db, if not, add it
-                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
-                fields=[]
-                for field in query:
-                    fields.append(field[1])
-                if not 'TIME_STAMP' in fields:
-                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
-                    
-                # check for timastamp field in db, if not, add it
-                query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
-                fields=[]
-                for field in query:
-                    fields.append(field[1])
-                if not 'PROJECT' in fields:
-                    self.dataDB.dbExec("ALTER TABLE DEPLOYMENT ADD COLUMN PROJECT TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN PROJECT TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN PROJECT TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN PROJECT TEXT;")
-                    self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN PROJECT TEXT;")
-
+                else: # we have a new project, lets make a new db file, shall we?
+                    try:
+                        self.dataDB = dbConnection.dbConnection(self.dataPath + self.activeProject+'_' + self.deployment+'.db', '', '',label='dataDB', driver="QSQLITE")
+                        self.dataDB.dbOpen()
+                        if self.dataDB.db.isOpen():
+                            self.makeDB()
+                        else:
+                            QMessageBox.warning(self, "ERROR", "Can't create local database.")
+                            return 
+                    except:
+                        self.showError()
+                        return
             else:# a new db file is needed - this is the first time we are opening this drop
                 # make the folder
                 QDir().mkdir(self.dataPath)
@@ -718,6 +698,38 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.showError()
                     return
                         
+            # add annotator and time stamp field if it doesnt exist
+            query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+            fields=[]
+            for field in query:
+                fields.append(field[1])
+            if not 'ANNOTATOR' in fields:
+                self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN ANNOTATOR TEXT;")
+                self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN ANNOTATOR TEXT;")
+                self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN ANNOTATOR TEXT;")
+                self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN ANNOTATOR TEXT;")
+                
+            # check for timastamp field in db, if not, add it
+            query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+            fields=[]
+            for field in query:
+                fields.append(field[1])
+            if not 'TIME_STAMP' in fields:
+                self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN TIME_STAMP TEXT;")
+                self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN TIME_STAMP TEXT;")
+                
+            # check for timastamp field in db, if not, add it
+            query = self.dataDB.dbQuery("PRAGMA table_info('TARGETS')")
+            fields=[]
+            for field in query:
+                fields.append(field[1])
+            if not 'PROJECT' in fields:
+                self.dataDB.dbExec("ALTER TABLE DEPLOYMENT ADD COLUMN PROJECT TEXT;")
+                self.dataDB.dbExec("ALTER TABLE TARGETS ADD COLUMN PROJECT TEXT;")
+                self.dataDB.dbExec("ALTER TABLE FRAME_METADATA ADD COLUMN PROJECT TEXT;")
+                self.dataDB.dbExec("ALTER TABLE FRAMES ADD COLUMN PROJECT TEXT;")
+                self.dataDB.dbExec("ALTER TABLE BOUNDING_BOXES ADD COLUMN PROJECT TEXT;")
+            
             # now select profile
             if not self.activeProfile:
                 # check to see if theres already an entry frop this dep
@@ -2167,9 +2179,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             dlg=annotatorDlg.AnnotatorDlg()
             if dlg.exec_():
                 self.annotator=dlg.annotator
-                self.annotatorLabel.setText(self.annotator)
             else:
-                self.annotator=''
+                self.annotator='UNID'
                 
             self.reloadData()
             for widget in self.recordEnableWidgets:
@@ -2310,32 +2321,22 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             if not self.recordBtn.isChecked():
                 return
             # get the annotator business with commas
-            query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
-            current_tators, =query.first()
-            if current_tators==None:
-                current_tators=''
-            tators=current_tators.split(',')
-            if not self.annotator in tators:
-                # add our tator
-                if len(current_tators)>0:
-                    current_tators=current_tators+","+self.annotator
-                else:
-                    current_tators=self.annotator
-            
+            current_tators=self.annotatorLabel.text()
+            # get the current frame comment
+            if self.frameCommentDlg!=None:
+                comment=self.frameCommentDlg.commentBox.toPlainText()
+            else:
+                comment=''
             # see if current frame is already in 
             query=self.dataDB.dbQuery("SELECT frame_number FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
             frame, =query.first()
             if frame:# already exists
-                if self.frameCommentDlg!=None:
-                    comment=self.frameCommentDlg.commentBox.toPlainText()
-                else:
-                    comment=''
                 self.dataDB.dbExec("UPDATE frames SET comment='"+comment+"', annotator='"+current_tators+"' WHERE frame_number="+self.frameBox.text()+
                 "  AND deployment_ID='"+self.deployment+"'")
             else:
                 dt=datetime.now(timezone.utc)
                 self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment, annotator, time_stamp)"+
-                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','','"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
+                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','"+comment+"','"+current_tators+"','"+dt.strftime(self.timestamp_format)+"')")
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
                 # now we write metadata
                 self.dataDB.dbExec("DELETE FROM FRAME_METADATA WHERE frame_number="+self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND deployment_ID='"+self.deployment+"'")
@@ -2438,15 +2439,15 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             # get frame level annotator
             query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
             current_tators, =query.first()
-#            if current_tators==None:
-#                current_tators=''
-#            tators=current_tators.split(',')
-#            if not self.annotator in tators:
-#                # add our tator
-#                if len(current_tators)>0:
-#                    current_tators=current_tators+","+self.annotator
-#                else:
-#                    current_tators=self.annotator
+            if current_tators==None:
+                current_tators=''
+            tators=current_tators.split('|')
+            if not self.annotator in tators:
+                # add our tator
+                if len(current_tators)>0:
+                    current_tators=current_tators+"|"+self.annotator
+                else:
+                    current_tators=self.annotator
             self.annotatorLabel.setText(current_tators)
             # draw targets
             self.activeLine[self.gvLeft]=None
