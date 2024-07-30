@@ -39,7 +39,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.speciesCollection = None
         self.metadataGroup = None
         self.frameComment=''
-        self.frameCommentDlg=None
         self.defaultMonoCamera=None
         self.activeGV='Both'
         self.defaultMetadataGroup='CamTrawl_metadata'
@@ -272,7 +271,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.spcSelDlg=speciesgroupdlg.SpeciesGroupDlg(self)
         
 
-       #self.closeup.move(position)
 
         # open and load up prfile db
         if not QFile('../db/Application.db').exists():
@@ -744,7 +742,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     dlg=makeseldlg.MakeSelDlg(self,  'profile', 'active')
                     if dlg.exec_():
                         self.activeProfile=dlg.value
-                        # put it into the db
+                        if not self.loadProfile():
+                            QMessageBox.warning(self, "ERROR", "There's something amiss with the profile settings.  Have a peek!")
+                            self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
+                            return
+                            
+                        if not QDir(self.deploymentPath + '/' + self.settings['LeftCameraImagePath']+ '/').exists():
+                            QMessageBox.warning(self, "ERROR", "This is not a valid deployment folder.")
+                            # delete profile from deployments table in project db
+                            self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
+                            return
+                            
+                        #were good to go,  put it into the db
                         time_now=QDateTime().currentDateTime()
                         self.dataDB.dbExec("INSERT INTO deployment (project, deployment_ID,last_opened,profile)"+
                         " VALUES('"+self.activeProject+"', '"+self.deployment+"','"+time_now.toString()+"','"+self.activeProfile+"')")
@@ -752,18 +761,6 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     else:
                         QMessageBox.warning(self, "ERROR", "Need a profile to work.")
                         return 
-
-                        
-            if not self.loadProfile():
-                QMessageBox.warning(self, "ERROR", "There's something amiss with the profile settings.  Have a peek!")
-                self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
-                return
-
-            if not QDir(self.deploymentPath + '/' + self.settings['LeftCameraImagePath']+ '/').exists():
-                QMessageBox.warning(self, "ERROR", "This is not a valid deployment folder.")
-                # delete profile from deployments table in project db
-                self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
-                return
 
             self.loadEnhancements()
 
@@ -2093,10 +2090,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.showError()
 
     def getFrameComment(self):
-        if  self.frameCommentDlg==None:
-            self.frameCommentDlg=framecommentdlg.CommentDlg(self)
-            #self.frameCommentDlg.setWindowFlags(Qt.WindowStaysOnTopHint)
-            self.frameCommentDlg.hide()
+
         if self.frameCommentBtn.isChecked():
             self.frameCommentDlg.show()
         else:
@@ -2181,7 +2175,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.annotator=dlg.annotator
             else:
                 self.annotator='UNID'
-                
+            self.frameCommentDlg=framecommentdlg.CommentDlg(self)
+            self.frameCommentDlg.hide()
             self.reloadData()
             for widget in self.recordEnableWidgets:
                 if widget in [self.measureBtn,  self.measureScBtn,  self.rangeBtn] and self.monoRadio.isChecked(): # dont enable widgets for mono mode
@@ -2323,10 +2318,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             # get the annotator business with commas
             current_tators=self.annotatorLabel.text()
             # get the current frame comment
-            if self.frameCommentDlg!=None:
-                comment=self.frameCommentDlg.commentBox.toPlainText()
-            else:
-                comment=''
+            comment=self.frameCommentDlg.commentBox.toPlainText()
+
             # see if current frame is already in 
             query=self.dataDB.dbQuery("SELECT frame_number FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
             frame, =query.first()
@@ -2597,9 +2590,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         self.metadataCheckBoxes[i].setChecked(True)
                                     else:
                                         self.metadataCheckBoxes[i].setChecked(False)
-                if self.frameCommentDlg!= None:
-                    frame=self.leftImageFrames[self.imageSlider.value()]
-                    self.frameCommentDlg.showComment(str(frame))
+                frame=self.leftImageFrames[self.imageSlider.value()]
+                self.frameCommentDlg.showComment(str(frame))
         
     def clearAutoExclusiveRadioBtnBoxes(self):
         for rad in self.radioBtnTags1:
