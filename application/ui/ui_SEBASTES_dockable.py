@@ -972,7 +972,7 @@ class Ui_SEBASTES(object):
         _translate = QtCore.QCoreApplication.translate
         SEBASTES.setWindowTitle(_translate("SEBASTES", "SEBASTES"))
         self.deploymentBox.setText(_translate("SEBASTES", "No deployment loaded"))
-        self.label_7.setText(_translate("SEBASTES", "Previously annotated by:"))
+        self.label_7.setText(_translate("SEBASTES", "Annotator"))
         self.label.setText(_translate("SEBASTES", "\\"))
         self.lastFrameBtn.setText(_translate("SEBASTES", "Go to last \n"
 "sampled frame"))

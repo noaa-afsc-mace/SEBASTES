@@ -85,7 +85,7 @@
        <item row="0" column="10">
         <widget class="QLabel" name="label_7">
          <property name="text">
-          <string>Previously annotated by:</string>
+          <string>Annotator</string>
          </property>
         </widget>
        </item>
