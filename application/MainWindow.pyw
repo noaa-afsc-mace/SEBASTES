@@ -735,6 +735,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 profile, =query.first()
                 if profile:
                     self.activeProfile=profile
+                    if not self.loadProfile():
+                        QMessageBox.warning(self, "ERROR", "There's something amiss with the profile settings.  Have a peek!")
+                        self.dataDB.dbExec("DELETE FROM deployment WHERE project='"+self.activeProject+"' and deployment_id='"+self.deployment+"'")
+                        return
                 else:
                     query=self.appDB.dbQuery("SELECT count(*) FROM PROFILES WHERE active='Yes'")
                     val, =query.first()
