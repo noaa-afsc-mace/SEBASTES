@@ -118,7 +118,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
             frame_number=self.targetModel.data(index2, Qt.DisplayRole)
         elif self.sender()==self.frameSelModel:
             selObj=self.frameTable.currentIndex()
-            index= self.frameModel.index(selObj.row(), 1, QModelIndex())
+            index= self.frameModel.index(selObj.row(), 0, QModelIndex())
             frame_number=self.frameModel.data(index, Qt.DisplayRole)
             target_number=None
         else:

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_annotatorDlg(object):
     def setupUi(self, annotatorDlg):
         annotatorDlg.setObjectName("annotatorDlg")
-        annotatorDlg.resize(264, 111)
+        annotatorDlg.resize(264, 120)
         self.verticalLayout = QtWidgets.QVBoxLayout(annotatorDlg)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(annotatorDlg)
@@ -37,6 +37,7 @@ class Ui_annotatorDlg(object):
         font = QtGui.QFont()
         font.setPointSize(8)
         self.cancelBtn.setFont(font)
+        self.cancelBtn.setFocusPolicy(QtCore.Qt.NoFocus)
         self.cancelBtn.setObjectName("cancelBtn")
         self.horizontalLayout.addWidget(self.cancelBtn)
         self.okBtn = QtWidgets.QPushButton(annotatorDlg)
