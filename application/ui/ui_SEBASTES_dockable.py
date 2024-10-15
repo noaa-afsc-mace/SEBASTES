@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_SEBASTES(object):
     def setupUi(self, SEBASTES):
         SEBASTES.setObjectName("SEBASTES")
-        SEBASTES.resize(1962, 904)
+        SEBASTES.resize(1962, 905)
         SEBASTES.setMinimumSize(QtCore.QSize(0, 0))
         SEBASTES.setMaximumSize(QtCore.QSize(9999, 9999))
         font = QtGui.QFont()
@@ -959,6 +959,7 @@ class Ui_SEBASTES(object):
         self.actionedit_DB_tables = QtWidgets.QAction(SEBASTES)
         self.actionedit_DB_tables.setObjectName("actionedit_DB_tables")
         self.menuFile.addAction(self.actionLoad)
+        self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionCreate_New_Project)
         self.menuFile.addAction(self.actionProfiles)
         self.menuFile.addAction(self.actionGUI_settings)

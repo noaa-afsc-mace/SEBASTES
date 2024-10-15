@@ -118,7 +118,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.rubberBanding = False
         self.mousebits=[None, None, None]
         self.lastItem=[]
-        self.matchThresholdEdit.setText('20')
+        self.matchThresholdEdit.setText('30')
         self.frameBox.returnPressed.connect(self.getFrame)
         self.stereoOnlyCheckBox.setChecked(False)
         self.bkpDep=None
@@ -958,6 +958,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             lastProgress = 0
             totalFrames = len(os.listdir(str(imPath) ))
             i=1
+            goodtimestamp=True
             for file in glob.glob(str(imPath) + '/*.'+type):
                 
                 imageFile=file.split('\\')[-1]
@@ -1077,7 +1078,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 for obj in [self.gvLeft, self.gvRight]:
                     obj.removeScene()
                     obj.createScene()
-
+            
                     
             self.LFile=self.readImage(self.gvLeft)
             self.RFile=self.readImage(self.gvRight)
@@ -1085,9 +1086,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 return
             currentFrame=self.leftImageFrames[self.imageSlider.value()]
             self.frameBox.setText(str(currentFrame))
-
-            if self.measureBtn.isChecked():
-                self.measureBtn.setChecked(False)
+            
+            for btn in [self.measureBtn, self.measureScBtn, self.rangeBtn]:
+                if btn.isChecked():
+                    btn.setChecked(False)
             self.zoomBtn=0
             self.targetLinkLabel.setText('')
             if self.recordBtn.isChecked():
@@ -1102,6 +1104,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 got_frame, =query.first()
                 if got_frame==None:
                     self.getCamtrawlMetadataValues(self.imageSlider.value())
+
+            
             
         except:
             self.showError()
@@ -1195,6 +1199,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 #####################4. UI FUNCTIONS########################################
 
     def btnPress(self):
+        for btn in [self.measureBtn, self.measureScBtn, self.rangeBtn]:
+            if btn.isChecked():
+                btn.setChecked(False)
         if self.pressTime.elapsed()<250:# user double clicked
             if self.spcSelDlg.exec_() and self.spcSelDlg.listWidget.currentIndex().row()>-1:
                 new_spc=self.spcSelDlg.listWidget.currentItem().text()
@@ -1578,7 +1585,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         marker = imageObj.addMark(clickLoc, style=style, color=col,
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
                         spcLabel=''
-                        if self.guiSettings['LabelSpeciesParam']>0:
+                        if self.guiSettings['LabelSpeciesParam']>0 and (self.spcInd !=None):
                             spcLabel=self.spcButtons[self.spcInd].text()
                             if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
                                 spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
@@ -1673,8 +1680,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                     self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
                                     "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                     self.pairPoints=[]
-                                    if self.rangeBtn.isChecked():
-                                        self.rangeBtn.setChecked(False)
+#                                    if self.rangeBtn.isChecked():
+#                                        self.rangeBtn.setChecked(False)
 #                                        self.toggleRange()
 #                                    self.calculate('point')
                                     self.dataDB.dbExec("UPDATE targets SET Range = "+str(self.targetStereoData[0])+", Error = "+str(self.targetStereoData[1])+
@@ -1732,8 +1739,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                 self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
                                 "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                 self.pairPoints=[]
-                                if self.rangeBtn.isChecked():
-                                    self.rangeBtn.setChecked(False)
+#                                if self.rangeBtn.isChecked():
+#                                    self.rangeBtn.setChecked(False)
 #                                    self.toggleRange()
                                 self.calculate('point')
                                 self.dataDB.dbExec("UPDATE targets SET Range = "+str(self.targetStereoData[0])+", Error = "+str(self.targetStereoData[1])+
@@ -1770,15 +1777,16 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                             else:
                                 points="NULL,NULL,"+str(clickLoc.x())+","+str(clickLoc.y())
                             dt=datetime.now(timezone.utc)
-                            self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator, time_stamp)"+
-                            " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"','"+
-                            dt.strftime(self.timestamp_format)+"')")
-                            self.pairedTarget=False
-                            if self.showDataCheck.isChecked():
-                                self.datadlg.refreshView()
-                            # add to speices in grid if grid is activated
-                            if self.gridCheck.isChecked():
-                                self.speciesInGrid.add(self.spcButtons[self.spcInd].text())
+                            if self.spcInd!=None:
+                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator, time_stamp)"+
+                                " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"','"+
+                                dt.strftime(self.timestamp_format)+"')")
+                                self.pairedTarget=False
+                                if self.showDataCheck.isChecked():
+                                    self.datadlg.refreshView()
+                                # add to speices in grid if grid is activated
+                                if self.gridCheck.isChecked():
+                                    self.speciesInGrid.add(self.spcButtons[self.spcInd].text())
                         self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
         self.incrementCounters()
         
@@ -1859,10 +1867,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             if self.measureBtn.isChecked() or self.measureScBtn.isChecked():
                 if not self.activeLine[self.gvLeft]==None and not self.activeLine[self.gvRight]==None:
                     # measurement completed, let's do some math
-                    if self.measureBtn.isChecked():
-                        col=self.guiSettings['TargetLineColor']
-                    else:
-                        col=self.guiSettings['SceneColor']
+#                    if self.measureBtn.isChecked():
+#                        col=self.guiSettings['TargetLineColor']
+#                    else:
+                    col=self.guiSettings['SceneColor']
 
 
                     # stereo triangulation
@@ -1920,12 +1928,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         marker = self.gvLeft.addMark(QPointF(LX, LY), style='d', color=self.guiSettings['SceneColor'],
                                                   size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
                         # create label
-                        spcLabel=''
-                        if self.guiSettings['LabelSpeciesParam']>0:
-                            spcLabel=self.spcButtons[self.spcInd].text()
-                            if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
-                                spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
-                        marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                        spcLabel='Scn'
+                        marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=self.guiSettings['SceneColor'], offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
                         self.activeMark [self.gvLeft]=marker
                         self.pointMarks.update({marker:[self.currentTarget,  self.gvLeft]})
 
@@ -1970,6 +1974,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         stPoint=QPointF(point1_c[0, 0], point1_c[0, 1])
                         endPoint=QPointF(point2_c[0, 0], point2_c[0, 1])
                         if not self.activeLine[self.gvLeft]==None: #we've clicked on the left' - draw line on right
+                            
                             lineObjs=self.gvRight.addDimensionLine(stPoint,endPoint, taillength=self.guiSettings['MeasureLineTailLength'],
                             thickness=self.guiSettings['MeasureLineWidth'],  color=self.guiSettings['TargetLineColor'])
                             self.lineMarks.update({lineObjs:[self.currentTarget,  self.gvRight]})
@@ -2200,6 +2205,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         if self.recordBtn.isChecked():
             self.recordBtn.setPalette(self.red)
             self.imageSlider.setEnabled(False)
+            self.playBtn.setEnabled(False)
             self.speciesDockWidget.show()
             if self.metadataCheckBox.isChecked():
                 self.metadataDockWidget.show()
@@ -2221,6 +2227,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         else:
             self.imageSlider.setEnabled(True)
+            self.playBtn.setEnabled(True)
             #self.__changeImage()
             self.speciesDockWidget.hide()
             self.metadataDockWidget.hide()
