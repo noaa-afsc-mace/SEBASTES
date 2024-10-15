@@ -71,7 +71,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
         self.spcButtons=[self.btn1, self.btn2, self.btn3, self.btn4, self.btn5, self.btn6, self.btn7, self.btn8, self.btn9, self.btn10,
             self.btn11, self.btn12, self.btn13, self.btn14, self.btn15, self.btn16, self.btn17, self.btn18, self.btn19, self.btn20, 
             self.btn21, self.btn22, self.btn23, self.btn24, self.btn25, self.btn26, self.btn27, self.btn28, self.btn29, self.btn30]
-        self.optionsBoxes=[self.labelCheck, self.showDataCheck, self.closeupCheck]
+        self.optionsBoxes=[self.labelCheck, self.showDataCheck, self.closeupCheck, self.metadataCheckBox]
         self.metadataLineEdits=[self.lineEdit1_1, self.lineEdit1_2, self.lineEdit1_3, self.lineEdit1_4, self.lineEdit1_5]
         self.metadataLineEditLabels=[self.label1_1, self.label1_2, self.label1_3, self.label1_4, self.label1_5]
         self.metadataCheckBoxes=[self.checkBox1_1, self.checkBox1_2, self.checkBox1_3, self.checkBox1_4, self.checkBox1_5]
@@ -81,6 +81,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                            self.radioButton2_7, self.radioButton2_8, self.radioButton2_9, self.radioButton2_10]
         self.radioBtnTags3=[self.radioButton3_1, self.radioButton3_2]
         self.metadataStickyBox.setEnabled(False)
+        self.metadataWidgets=[self.exclusiveRadioBox1, self.exclusiveRadioBox2, self.exclusiveRadioBox3, self.metadataStickyBox, self.extraMetadataFrame]
         self.metadataTypesDict={}
         self.recordEnableWidgets=[self.recomputeBtn,self.trainBtn,self.measureBtn, self.measureScBtn, self.rangeBtn,self.linkBtn , self.targetCommentBtn, self.frameCommentBtn, 
                             self.computeMatchBox, self.matchThresholdEdit, self.stereoOnlyCheckBox, self.showDataCheck, self.editSpeciesBtn, self.gridCheck,  self.clearGridBtn,  self.delLinkBtn, self.lastFrameBtn]
@@ -159,7 +160,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         for box in self.optionsBoxes:
             box.stateChanged.connect(self.checkBoxAction)
-
+        
+        self.metadataStickyBox.stateChanged.connect(self.clearMetadataSelections) 
         # camera view radio button
         self.stereoRadio.setChecked(True)# default state - remeber?
         self.monoRadio.clicked.connect(self.cameraViewAction)
@@ -417,6 +419,11 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
             # populate metadata
             if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
+                self.metadataCheckBox.setChecked(True)
+            else:
+                self.metadataCheckBox.setChecked(False)
+                
+            if self.metadataCheckBox.isChecked():
                 self.metadataDockWidget.setWindowTitle(self.metadataGroup)
                 self.radioBtnList1=[]
                 self.radioBtnDescriptionsList1=[]
@@ -540,11 +547,11 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                         self.metadata = CamTrawlMetadata.CamTrawlMetadata()
                         self.metadata.open(self.deploymentPath)
                         self.metadata.query()
-            self.metadataStickyBox.setEnabled(True)
-            if self.guiSettings['DefaultMetadataSelection']=='retain':
-                self.metadataStickyBox.setChecked(True)
-            else:
-                self.metadataStickyBox.setChecked(False)
+                self.metadataStickyBox.setEnabled(True)
+                if self.guiSettings['DefaultMetadataSelection']=='retain':
+                    self.metadataStickyBox.setChecked(True)
+                else:
+                    self.metadataStickyBox.setChecked(False)
             if 'SubsampleMask' in self.settings:
                 if self.settings['SubsampleMask'].lower()=='no' or self.settings['SubsampleMask'].lower()=='':
                     self.doMask=False
@@ -1339,7 +1346,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.pairPoints=[]
 
             self.__changeImage()
-            
+        
+        elif (ev.key() == Qt.Key_Z):
+            # this is to quick undo auto targets only
+            if self.computeMatchBox.isChecked():
+                # remove current mark and delete from db
+                self.dataDB.dbExec("DELETE FROM targets WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                # remove mark
+                self.gvLeft.removeItem(self.activeMark[self.gvLeft])
+                self.gvLeft.update()
+                self.gvRight.removeItem(self.activeMark[self.gvRight])
+                self.gvRight.update()
+                
     def __keyReleaseEvent(self,ivObj, ev):
         # no key is being held down right now
 
@@ -2042,7 +2060,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.countInFrameLabel.setText(countstr)
 
     def clearValues(self):
-        if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
+        if self.metadataCheckBox.isChecked():
             if not self.metadataStickyBox.isChecked():# reset the boxes
                 self.clearAutoExclusiveRadioBtnBoxes()
                 for box in self.metadataCheckBoxes:
@@ -2161,6 +2179,18 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
     def uncheckCloseupWindowBox(self,  flag):
         if flag:
             self.closeupCheck.setChecked(False)
+            
+    def toggleMetadataCollection(self):
+        if self.metadataCheckBox.isChecked():
+            # enable metadata inputs
+            for widget in elf.metadataWidgets:
+                widget.setEnabled(True)
+        else:
+            # disable metadata inputs
+            for widget in elf.metadataWidgets:
+                widget.setEnabled(False)
+            
+            
 
     def toggleRecord(self):
         if self.deployment==None:
@@ -2171,7 +2201,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.recordBtn.setPalette(self.red)
             self.imageSlider.setEnabled(False)
             self.speciesDockWidget.show()
-            if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
+            if self.metadataCheckBox.isChecked():
                 self.metadataDockWidget.show()
             # get the annotator now!
             dlg=annotatorDlg.AnnotatorDlg()
@@ -2334,7 +2364,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 dt=datetime.now(timezone.utc)
                 self.dataDB.dbExec("INSERT INTO frames (project, deployment_ID, frame_number, frame_time, comment, annotator, time_stamp)"+
                     " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+",'"+self.dtString+"','"+comment+"','"+current_tators+"','"+dt.strftime(self.timestamp_format)+"')")
-            if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
+            if self.metadataCheckBox.isChecked():
                 # now we write metadata
                 self.dataDB.dbExec("DELETE FROM FRAME_METADATA WHERE frame_number="+self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND deployment_ID='"+self.deployment+"'")
                 if 'ExclusiveRadioBox1' in self.metadataTypesDict:
@@ -2596,6 +2626,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         self.metadataCheckBoxes[i].setChecked(False)
                 frame=self.leftImageFrames[self.imageSlider.value()]
                 self.frameCommentDlg.showComment(str(frame))
+                
+    def clearMetadataSelections(self):
+        if not self.metadataStickyBox.isChecked():# reset autoexclusive buttons
+            self.clearAutoExclusiveRadioBtnBoxes()
         
     def clearAutoExclusiveRadioBtnBoxes(self):
         for rad in self.radioBtnTags1:
@@ -2783,7 +2817,15 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     mark.hideLabels(None)
                 for line,  x in self.lineMarks.items():
                     line.hideLabels(None)
-                    
+        elif self.sender()==self.metadataCheckBox:
+            if self.metadataCheckBox.isChecked():
+                # enable metadata inputs
+                for widget in self.metadataWidgets:
+                    widget.setEnabled(True)
+            else:
+                # disable metadata inputs
+                for widget in self.metadataWidgets:
+                    widget.setEnabled(False)
     def gridBoxAction(self):
 
         if self.gridCheck.isChecked(): # we are adding grid

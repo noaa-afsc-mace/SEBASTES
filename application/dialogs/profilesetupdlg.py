@@ -92,21 +92,18 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
             self.profileFrame.setEnabled(True)
             self.profileNameEdit.setEnabled(False)# cant change the profile name
             dlg=makeseldlg.MakeSelDlg(self,  'profile')
-            dlg.newBtn.hide()
             if dlg.exec_():
                 self.activeProfile=dlg.value
                 self.loadProfile()
         elif self.sender()==self.selectSpcCollectionBtn:
             self.spcCollectionNameEdit.setEnabled(False)
             dlg=makeseldlg.MakeSelDlg(self,  'species')
-            dlg.newBtn.hide()
             if dlg.exec_():
                 self.speciesCollection=dlg.value
                 self.loadSpecies()
         elif self.sender()==self.selectMetadataGroupBtn:
             self.metadataGroupEdit.setEnabled(False)
             dlg=makeseldlg.MakeSelDlg(self,  'metadata')
-            dlg.newBtn.hide()
             if dlg.exec_():
                 self.metadataGroup=dlg.value
                 self.loadMetadata()
