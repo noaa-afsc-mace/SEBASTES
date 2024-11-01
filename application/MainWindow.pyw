@@ -1071,6 +1071,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             if self.recordBtn.isChecked():
                 self.deSelect()
                 self.clearMarks()
+                # deal with orphaned stereo pair 
+                self.pairPoints=[]
                 # deal with the grid
                 if not self.gridSetup['PersistentGrid'] and self.gridCheck.isChecked():
                     self.gridCheck.setChecked(False)
@@ -1500,190 +1502,249 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.targetLinkLabel.setText(str(self.currentTarget))
                     self.linkBtn.setChecked(False)
         else:
+            try:
+                if self.measureBtn.isChecked():
+                    dimLine = imageObj.startDimensionLine(clickLoc, taillength=self.guiSettings['MeasureLineTailLength'],  thickness=self.guiSettings['MeasureLineWidth'], color=self.guiSettings['TargetLineColor'])
+                    self.rubberBanding = True
+                    #check to see if we already have amark on this gv?
+                    old_line=None
+                    for lineObj, descriptor in self.lineMarks.items():
+                        if descriptor[1]==imageObj and descriptor[0]==self.currentTarget:# we already have a dimension line for this target in this image
+                            old_line=lineObj
+                            break
+                    if old_line:# we do, get rid of it
+                        del self.lineMarks[old_line] 
+                        imageObj.removeItem(old_line)
+                    self.lineMarks.update({dimLine:[self.currentTarget, imageObj]})
+                    
+                elif self.measureScBtn.isChecked():
+                    # create  new target for this
+                    query = self.dataDB.dbQuery("SELECT max(target_number) FROM targets WHERE frame_number = "+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
+                    max_target, =query.first()
+                    if max_target!=None:
+                        self.currentTarget=int(max_target)+1
+                    else:# no targets yet for this frame
+                        self.currentTarget=1
+                    dimLine = imageObj.startDimensionLine(clickLoc, taillength=self.guiSettings['MeasureLineTailLength'],  thickness=self.guiSettings['MeasureLineWidth'], color=self.guiSettings['SceneColor'])
+                    self.rubberBanding = True
+                    self.lineMarks.update({dimLine:[self.currentTarget, imageObj]})
 
-            if self.measureBtn.isChecked():
-                dimLine = imageObj.startDimensionLine(clickLoc, taillength=self.guiSettings['MeasureLineTailLength'],  thickness=self.guiSettings['MeasureLineWidth'], color=self.guiSettings['TargetLineColor'])
-                self.rubberBanding = True
-                #check to see if we already have amark on this gv?
-                old_line=None
-                for lineObj, descriptor in self.lineMarks.items():
-                    if descriptor[1]==imageObj and descriptor[0]==self.currentTarget:# we already have a dimension line for this target in this image
-                        old_line=lineObj
-                        break
-                if old_line:# we do, get rid of it
-                    del self.lineMarks[old_line] 
-                    imageObj.removeItem(old_line)
-                self.lineMarks.update({dimLine:[self.currentTarget, imageObj]})
-                
-            elif self.measureScBtn.isChecked():
-                # create  new target for this
-                query = self.dataDB.dbQuery("SELECT max(target_number) FROM targets WHERE frame_number = "+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
-                max_target, =query.first()
-                if max_target!=None:
-                    self.currentTarget=int(max_target)+1
-                else:# no targets yet for this frame
-                    self.currentTarget=1
-                dimLine = imageObj.startDimensionLine(clickLoc, taillength=self.guiSettings['MeasureLineTailLength'],  thickness=self.guiSettings['MeasureLineWidth'], color=self.guiSettings['SceneColor'])
-                self.rubberBanding = True
-                self.lineMarks.update({dimLine:[self.currentTarget, imageObj]})
+                else:
 
-            else:
-
-                # add a species count marker
-                # check to see if any species is selected
-                self.spcInd=None
-                for btn in self.spcButtons:
-                    if btn.isChecked():
-                        self.spcInd=self.spcButtons.index(btn)
-                        break
-                if not self.spcInd==None or self.rangeBtn.isChecked():# theres some kind of class selected
-                    if item:
-                        remList=[]
-                        for i in item:
-                            if not i in self.pointMarks:
-                                remList.append(i)
-                        for i in remList:
-                            item.remove(i)
-                    if self.rangeBtn.isChecked():
-                        style='d'
-                        col=self.guiSettings['SceneColor']
-                    else:
-                        if QGuiApplication.queryKeyboardModifiers()==Qt.ShiftModifier or self.stereoOnlyCheckBox.isChecked():
-                            style='o'
-                            col=self.spcColors[self.spcInd]
-                            if len(self.pairPoints)>0:
-                                if imageObj in self.pairPoints[0]:
-                                    return
+                    # add a species count marker
+                    # check to see if any species is selected
+                    self.spcInd=None
+                    for btn in self.spcButtons:
+                        if btn.isChecked():
+                            self.spcInd=self.spcButtons.index(btn)
+                            break
+                    if not self.spcInd==None or self.rangeBtn.isChecked():# theres some kind of class selected
+                        if item:
+                            remList=[]
+                            for i in item:
+                                if not i in self.pointMarks:
+                                    remList.append(i)
+                            for i in remList:
+                                item.remove(i)
+                        if self.rangeBtn.isChecked():
+                            style='d'
+                            col=self.guiSettings['SceneColor']
                         else:
-                            style='+'
-                        # extract color from button?
-                        btn=self.spcButtons[self.spcInd]
-                        colstr=re.findall(r'\d+', btn.styleSheet())
-                        col=[int(colstr[0]), int(colstr[1]), int(colstr[2])]
-
-                    if self.recordBtn.isChecked():
-                        # check to see if in grid boundary, if needed
-                        if self.gridSetup['CellBoundary'] and self.gridCheck.isChecked():
-                            if self.randomCellBounds is not None:
-                                if clickLoc.x()<self.randomCellBounds[0] or clickLoc.x()>self.randomCellBounds[1] or clickLoc.y()<self.randomCellBounds[2] or clickLoc.y()>self.randomCellBounds[3]:
-                                    QMessageBox.warning(self, "ERROR", "Target not within selected grid cell! If you don't want this, check grid setup.")
-                                    return
-                        # add the mark
-                        query = self.dataDB.dbQuery("SELECT max(target_number) FROM targets WHERE frame_number = "+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
-                        target_count, =query.first()
-                        if target_count!=None:
-                            self.currentTarget=int(target_count)+1
-                        else:# no targets yet for this frame
-                            self.currentTarget=1
-                        if self.makeBoxes:
-                            imageObj.startRubberBand(clickLoc, color=self.spcColors[self.spcInd],thickness=self.guiSettings['BoxLineThickness'])
-
-                            self.rubberBanding = True
-                            return# we are just rubberbanding, no need to do anythin else
-
-
-                        marker = imageObj.addMark(clickLoc, style=style, color=col,
-                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                        spcLabel=''
-                        if self.guiSettings['LabelSpeciesParam']>0 and (self.spcInd !=None):
-                            spcLabel=self.spcButtons[self.spcInd].text()
-                            if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
-                                spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
-
-                        marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
-                        if not self.labelCheck.isChecked():
-                            marker.hideLabels(None)
-
-
-                        if QGuiApplication.queryKeyboardModifiers()==Qt.ShiftModifier  or self.stereoOnlyCheckBox.isChecked():# matched target
-                            if len(self.pairPoints)<1:# have only half of the points for this matched target
-                                if self.computeMatchBox.isChecked():# here we auto fill both points
-                                    if imageObj==self.gvLeft:
-                                        im1=self.gvLeft.image.enhancedData
-                                        im2=self.gvRight.image.enhancedData
-                                    else:
-                                        im2=self.gvLeft.image.enhancedData
-                                        im1=self.gvRight.image.enhancedData
-                                    point=ny.array([[clickLoc.x(), clickLoc.y()]])
-                                    state,  point_c,  score=self.stereoComp.computeMatch(im1, im2, point)
-                                    if not state:
-                                        QMessageBox.warning(self, "ERROR",score)
-                                        self.__changeImage()
-                                        self.computeMatchBox.setChecked(False)
+                            if QGuiApplication.queryKeyboardModifiers()==Qt.ShiftModifier or self.stereoOnlyCheckBox.isChecked():
+                                style='o'
+                                col=self.spcColors[self.spcInd]
+                                if len(self.pairPoints)>0:
+                                    if imageObj in self.pairPoints[0]:
                                         return
-                                    try:
-                                        t=float(self.matchThresholdEdit.text())
-                                    except:
-                                        t=None
-#                                    if t[1]:
-#                                        if score>t[0]:
-#                                            print(score)
-#                                            QMessageBox.warning(self, "ERROR", "Couldn't find an appropriate match!")
-#                                            self.__changeImage()
-#                                            return
+                            else:
+                                style='+'
+                            # extract color from button?
+                            btn=self.spcButtons[self.spcInd]
+                            colstr=re.findall(r'\d+', btn.styleSheet())
+                            col=[int(colstr[0]), int(colstr[1]), int(colstr[2])]
+
+                        if self.recordBtn.isChecked():
+                            # check to see if in grid boundary, if needed
+                            if self.gridSetup['CellBoundary'] and self.gridCheck.isChecked():
+                                if self.randomCellBounds is not None:
+                                    if clickLoc.x()<self.randomCellBounds[0] or clickLoc.x()>self.randomCellBounds[1] or clickLoc.y()<self.randomCellBounds[2] or clickLoc.y()>self.randomCellBounds[3]:
+                                        QMessageBox.warning(self, "ERROR", "Target not within selected grid cell! If you don't want this, check grid setup.")
+                                        return
+                            # add the mark
+                            query = self.dataDB.dbQuery("SELECT max(target_number) FROM targets WHERE frame_number = "+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
+                            target_count, =query.first()
+                            if target_count!=None:
+                                self.currentTarget=int(target_count)+1
+                            else:# no targets yet for this frame
+                                self.currentTarget=1
+                            if self.makeBoxes:
+                                imageObj.startRubberBand(clickLoc, color=self.spcColors[self.spcInd],thickness=self.guiSettings['BoxLineThickness'])
+
+                                self.rubberBanding = True
+                                return# we are just rubberbanding, no need to do anythin else
+
+
+                            marker = imageObj.addMark(clickLoc, style=style, color=col,
+                                                      size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
+                            spcLabel=''
+                            if self.guiSettings['LabelSpeciesParam']>0 and (self.spcInd !=None):
+                                spcLabel=self.spcButtons[self.spcInd].text()
+                                if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                                    spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+
+                            marker.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                            if not self.labelCheck.isChecked():
+                                marker.hideLabels(None)
+
+
+                            if QGuiApplication.queryKeyboardModifiers()==Qt.ShiftModifier  or self.stereoOnlyCheckBox.isChecked():# matched target
+                                if len(self.pairPoints)<1:# have only half of the points for this matched target
+                                    if self.computeMatchBox.isChecked():# here we auto fill both points
+                                        if imageObj==self.gvLeft:
+                                            im1=self.gvLeft.image.enhancedData
+                                            im2=self.gvRight.image.enhancedData
+                                        else:
+                                            im2=self.gvLeft.image.enhancedData
+                                            im1=self.gvRight.image.enhancedData
+                                        point=ny.array([[clickLoc.x(), clickLoc.y()]])
+                                        state,  point_c,  score=self.stereoComp.computeMatch(im1, im2, point)
+                                        if not state:
+                                            QMessageBox.warning(self, "ERROR",score)
+                                            self.__changeImage()
+                                            self.computeMatchBox.setChecked(False)
+                                            return
+                                        try:
+                                            t=float(self.matchThresholdEdit.text())
+                                        except:
+                                            t=None
+    #                                    if t[1]:
+    #                                        if score>t[0]:
+    #                                            print(score)
+    #                                            QMessageBox.warning(self, "ERROR", "Couldn't find an appropriate match!")
+    #                                            self.__changeImage()
+    #                                            return
+                                        if imageObj==self.gvLeft:
+                                            otherObj=self.gvRight
+                                        else:
+                                            otherObj=self.gvLeft
+                                        # check projection error first!
+                                        self.targetPosition=[]
+                                        self.pairedTarget=True
+                                        if  imageObj==self.gvLeft:
+                                            self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
+                                            self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
+                                            points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(point_c[0][0])+","+str(point_c[0][1])
+                                        else:
+                                            self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
+                                            self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
+                                            points=str(point_c[0][0])+","+str(point_c[0][1])+","+str(clickLoc.x())+","+str(clickLoc.y())
+                                        self.calculate('point')
+                                        if t:
+                                            if self.targetStereoData[1]>t:
+                                                QMessageBox.warning(self, "ERROR", "Couldn't find an appropriate match!")
+                                                self.__changeImage()
+                                                self.computeMatchBox.setChecked(False)
+                                                return
+                                        # crate mark for other side
+                                        self.theOtherTarget = otherObj.addMark(QPoint(point_c[0][0], point_c[0][1]), style=style, color=col,
+                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
+                                        self.theOtherTarget.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
+                                        if not self.labelCheck.isChecked():
+                                            self.theOtherTarget.hideLabels(None)
+                                        self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
+                                        # and your twin too!
+
+                                        if imageObj==self.gvLeft:
+                                            self.activeMark [self.gvLeft]=marker
+                                            self.activeMark [self.gvRight]=self.theOtherTarget
+                                            self.pointMarks.update({self.theOtherTarget:[self.currentTarget,  self.gvRight]})
+                                        else:
+                                            self.activeMark [self.gvLeft]=self.theOtherTarget
+                                            self.activeMark [self.gvRight]=marker
+                                            self.pointMarks.update({self.theOtherTarget:[self.currentTarget,  self.gvLeft]})
+                                        self.theOtherTarget=None
+
+    #                                    self.targetPosition=[]
+    #                                    self.pairedTarget=True
+    #                                    if  imageObj==self.gvLeft:
+    #                                        self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
+    #                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
+    #                                        points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(point_c[0][0])+","+str(point_c[0][1])
+    #                                    else:
+    #                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
+    #                                        self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
+    #                                        points=str(point_c[0][0])+","+str(point_c[0][1])+","+str(clickLoc.x())+","+str(clickLoc.y())
+                                        if self.rangeBtn.isChecked():# this is not an animal target, but just a range value
+                                            tClass='SceneRange'
+                                        else: # animal target
+                                            tClass=self.spcButtons[self.spcInd].text()
+                                        dt=datetime.now(timezone.utc)
+                                        self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
+                                        "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
+                                        self.pairPoints=[]
+    #                                    if self.rangeBtn.isChecked():
+    #                                        self.rangeBtn.setChecked(False)
+    #                                        self.toggleRange()
+    #                                    self.calculate('point')
+                                        self.dataDB.dbExec("UPDATE targets SET Range = "+str(self.targetStereoData[0])+", Error = "+str(self.targetStereoData[1])+
+                                        ", hx = "+str(self.targetStereoData[2])+",hy = "+str(self.targetStereoData[3])+", hz ="+str(self.targetStereoData[4])+
+                                        " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                                        if len(self.linkData)>0:
+                                            self.dataDB.dbExec("UPDATE targets SET target_link = "+str(self.linkData[1])+
+                                            " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                                            self.linkData=[]
+                                            self.linkBtn.setChecked(False)
+                                        targetLabel=str(self.currentTarget)+" r = "+str(round(self.targetStereoData[0], 2))+"  e = "+str(round(self.targetStereoData[1], 2))
+                                        if self.guiSettings['ShowClassOnLabel']=='true':
+                                            targetLabel=targetLabel+' '+tClass
+                                        self.activeMark[self.gvLeft].setLabelText('tnumber',targetLabel)
+                                        if not self.labelCheck.isChecked():
+                                            self.activeMark[self.gvLeft].hideLabels(None)
+                                        if self.showDataCheck.isChecked():
+                                            self.datadlg.refreshView()
+                                        return
+
+
+
+
+                                    self.pairPoints.append([imageObj, clickLoc.x(), clickLoc.y()])
+                                    self.pairedTarget=False
+                                    # active mark stuff
+                                    self.activeMark [self.gvLeft]=None
+                                    self.activeMark [self.gvLeft]=None
+                                    self.theOtherTarget=marker
+                                else:# this the second point of the pair
                                     if imageObj==self.gvLeft:
-                                        otherObj=self.gvRight
+                                        self.activeMark [self.gvLeft]=marker
+                                        self.activeMark [self.gvRight]=self.theOtherTarget
+                                        self.theOtherTarget=None
                                     else:
-                                        otherObj=self.gvLeft
-                                    # check projection error first!
+                                        self.activeMark [self.gvLeft]=self.theOtherTarget
+                                        self.activeMark [self.gvRight]=marker
+                                        self.theOtherTarget=None
+
                                     self.targetPosition=[]
                                     self.pairedTarget=True
                                     if  imageObj==self.gvLeft:
                                         self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
-                                        points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(point_c[0][0])+","+str(point_c[0][1])
+                                        self.targetPosition.append(QPointF(self.pairPoints[0][1], self.pairPoints[0][2]))
+                                        points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(self.pairPoints[0][1])+","+str(self.pairPoints[0][2])
                                     else:
-                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
+                                        self.targetPosition.append(QPointF(self.pairPoints[0][1], self.pairPoints[0][2]))
                                         self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-                                        points=str(point_c[0][0])+","+str(point_c[0][1])+","+str(clickLoc.x())+","+str(clickLoc.y())
-                                    self.calculate('point')
-                                    if t:
-                                        if self.targetStereoData[1]>t:
-                                            QMessageBox.warning(self, "ERROR", "Couldn't find an appropriate match!")
-                                            self.__changeImage()
-                                            self.computeMatchBox.setChecked(False)
-                                            return
-                                    # crate mark for other side
-                                    self.theOtherTarget = otherObj.addMark(QPoint(point_c[0][0], point_c[0][1]), style=style, color=col,
-                                              size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                                    self.theOtherTarget.addLabel(str(self.currentTarget)+" "+spcLabel, color=col, offset=self.textOffset, name='tnumber',  size=self.guiSettings['LabelTextSize'])
-                                    if not self.labelCheck.isChecked():
-                                        self.theOtherTarget.hideLabels(None)
-                                    self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
-                                    # and your twin too!
-
-                                    if imageObj==self.gvLeft:
-                                        self.activeMark [self.gvLeft]=marker
-                                        self.activeMark [self.gvRight]=self.theOtherTarget
-                                        self.pointMarks.update({self.theOtherTarget:[self.currentTarget,  self.gvRight]})
-                                    else:
-                                        self.activeMark [self.gvLeft]=self.theOtherTarget
-                                        self.activeMark [self.gvRight]=marker
-                                        self.pointMarks.update({self.theOtherTarget:[self.currentTarget,  self.gvLeft]})
-                                    self.theOtherTarget=None
-
-#                                    self.targetPosition=[]
-#                                    self.pairedTarget=True
-#                                    if  imageObj==self.gvLeft:
-#                                        self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-#                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
-#                                        points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(point_c[0][0])+","+str(point_c[0][1])
-#                                    else:
-#                                        self.targetPosition.append(QPointF(point_c[0][0], point_c[0][1]))
-#                                        self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-#                                        points=str(point_c[0][0])+","+str(point_c[0][1])+","+str(clickLoc.x())+","+str(clickLoc.y())
+                                        points=str(self.pairPoints[0][1])+","+str(self.pairPoints[0][2])+","+str(clickLoc.x())+","+str(clickLoc.y())
                                     if self.rangeBtn.isChecked():# this is not an animal target, but just a range value
                                         tClass='SceneRange'
                                     else: # animal target
                                         tClass=self.spcButtons[self.spcInd].text()
                                     dt=datetime.now(timezone.utc)
                                     self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
-                                    "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
+                                    "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                     self.pairPoints=[]
-#                                    if self.rangeBtn.isChecked():
-#                                        self.rangeBtn.setChecked(False)
-#                                        self.toggleRange()
-#                                    self.calculate('point')
+    #                                if self.rangeBtn.isChecked():
+    #                                    self.rangeBtn.setChecked(False)
+    #                                    self.toggleRange()
+                                    self.calculate('point')
                                     self.dataDB.dbExec("UPDATE targets SET Range = "+str(self.targetStereoData[0])+", Error = "+str(self.targetStereoData[1])+
                                     ", hx = "+str(self.targetStereoData[2])+",hy = "+str(self.targetStereoData[3])+", hz ="+str(self.targetStereoData[4])+
                                     " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
@@ -1692,6 +1753,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
                                         self.linkData=[]
                                         self.linkBtn.setChecked(False)
+
                                     targetLabel=str(self.currentTarget)+" r = "+str(round(self.targetStereoData[0], 2))+"  e = "+str(round(self.targetStereoData[1], 2))
                                     if self.guiSettings['ShowClassOnLabel']=='true':
                                         targetLabel=targetLabel+' '+tClass
@@ -1700,96 +1762,38 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         self.activeMark[self.gvLeft].hideLabels(None)
                                     if self.showDataCheck.isChecked():
                                         self.datadlg.refreshView()
-                                    return
-
-
-
-
-                                self.pairPoints.append([imageObj, clickLoc.x(), clickLoc.y()])
-                                self.pairedTarget=False
-                                # active mark stuff
-                                self.activeMark [self.gvLeft]=None
-                                self.activeMark [self.gvLeft]=None
-                                self.theOtherTarget=marker
-                            else:# this the second point of the pair
+                                        ##########
+                                    self.pairPoints=[]
+                                        
+                            else:# non-matched target
+                                #set active mark for zooming
                                 if imageObj==self.gvLeft:
                                     self.activeMark [self.gvLeft]=marker
-                                    self.activeMark [self.gvRight]=self.theOtherTarget
-                                    self.theOtherTarget=None
+                                    self.activeMark [self.gvRight]=None
                                 else:
-                                    self.activeMark [self.gvLeft]=self.theOtherTarget
+                                    self.activeMark [self.gvLeft]=None
                                     self.activeMark [self.gvRight]=marker
-                                    self.theOtherTarget=None
-
-                                self.targetPosition=[]
-                                self.pairedTarget=True
+                                # set selection
                                 if  imageObj==self.gvLeft:
-                                    self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-                                    self.targetPosition.append(QPointF(self.pairPoints[0][1], self.pairPoints[0][2]))
-                                    points=str(clickLoc.x())+","+str(clickLoc.y())+","+str(self.pairPoints[0][1])+","+str(self.pairPoints[0][2])
+                                    points=str(clickLoc.x())+","+str(clickLoc.y())+",NULL,NULL"
                                 else:
-                                    self.targetPosition.append(QPointF(self.pairPoints[0][1], self.pairPoints[0][2]))
-                                    self.targetPosition.append(QPointF(clickLoc.x(), clickLoc.y()))
-                                    points=str(self.pairPoints[0][1])+","+str(self.pairPoints[0][2])+","+str(clickLoc.x())+","+str(clickLoc.y())
-                                if self.rangeBtn.isChecked():# this is not an animal target, but just a range value
-                                    tClass='SceneRange'
-                                else: # animal target
-                                    tClass=self.spcButtons[self.spcInd].text()
+                                    points="NULL,NULL,"+str(clickLoc.x())+","+str(clickLoc.y())
                                 dt=datetime.now(timezone.utc)
-                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY, annotator, time_stamp)  "+
-                                "VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"',"+points+",'"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
-                                self.pairPoints=[]
-#                                if self.rangeBtn.isChecked():
-#                                    self.rangeBtn.setChecked(False)
-#                                    self.toggleRange()
-                                self.calculate('point')
-                                self.dataDB.dbExec("UPDATE targets SET Range = "+str(self.targetStereoData[0])+", Error = "+str(self.targetStereoData[1])+
-                                ", hx = "+str(self.targetStereoData[2])+",hy = "+str(self.targetStereoData[3])+", hz ="+str(self.targetStereoData[4])+
-                                " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
-                                if len(self.linkData)>0:
-                                    self.dataDB.dbExec("UPDATE targets SET target_link = "+str(self.linkData[1])+
-                                    " WHERE frame_number = "+self.frameBox.text()+" AND target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
-                                    self.linkData=[]
-                                    self.linkBtn.setChecked(False)
-
-                                targetLabel=str(self.currentTarget)+" r = "+str(round(self.targetStereoData[0], 2))+"  e = "+str(round(self.targetStereoData[1], 2))
-                                if self.guiSettings['ShowClassOnLabel']=='true':
-                                    targetLabel=targetLabel+' '+tClass
-                                self.activeMark[self.gvLeft].setLabelText('tnumber',targetLabel)
-                                if not self.labelCheck.isChecked():
-                                    self.activeMark[self.gvLeft].hideLabels(None)
-                                if self.showDataCheck.isChecked():
-                                    self.datadlg.refreshView()
-                                    ##########
-                                self.pairPoints=[]
-                                    
-                        else:# non-matched target
-                            #set active mark for zooming
-                            if imageObj==self.gvLeft:
-                                self.activeMark [self.gvLeft]=marker
-                                self.activeMark [self.gvRight]=None
-                            else:
-                                self.activeMark [self.gvLeft]=None
-                                self.activeMark [self.gvRight]=marker
-                            # set selection
-                            if  imageObj==self.gvLeft:
-                                points=str(clickLoc.x())+","+str(clickLoc.y())+",NULL,NULL"
-                            else:
-                                points="NULL,NULL,"+str(clickLoc.x())+","+str(clickLoc.y())
-                            dt=datetime.now(timezone.utc)
-                            if self.spcInd!=None:
-                                self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator, time_stamp)"+
-                                " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"','"+
-                                dt.strftime(self.timestamp_format)+"')")
-                                self.pairedTarget=False
-                                if self.showDataCheck.isChecked():
-                                    self.datadlg.refreshView()
-                                # add to speices in grid if grid is activated
-                                if self.gridCheck.isChecked():
-                                    self.speciesInGrid.add(self.spcButtons[self.spcInd].text())
-                        self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
-        self.incrementCounters()
-        
+                                if self.spcInd!=None:
+                                    self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, LX, LY, RX, RY,annotator, time_stamp)"+
+                                    " VALUES('"+self.activeProject+"', '"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+self.spcButtons[self.spcInd].text()+"',"+points+",'"+self.annotator+"','"+
+                                    dt.strftime(self.timestamp_format)+"')")
+                                    self.pairedTarget=False
+                                    if self.showDataCheck.isChecked():
+                                        self.datadlg.refreshView()
+                                    # add to speices in grid if grid is activated
+                                    if self.gridCheck.isChecked():
+                                        self.speciesInGrid.add(self.spcButtons[self.spcInd].text())
+                            self.pointMarks.update({marker:[self.currentTarget,  imageObj]})
+                self.incrementCounters()
+            except:
+                self.showError()
+            
     def deleteSelMark(self):
         if len(self.__selectedItems)>0:
             item =self.__selectedItems[0]# it it is a pair, grab just one
