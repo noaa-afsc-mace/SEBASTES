@@ -619,13 +619,33 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.writeDatatoCSV()
                     # must clear out everything
                     self.activeProfile=None
+                    
+
             #  update the application settings with the data directory
 
             self.deployment = self.deploymentPath.split('/')[-1]
             self.sourcePath = QDir(self.deploymentPath)
             self.sourcePath.cdUp()
             self.__dataDir = self.sourcePath.path()
-            
+            self.dataPath = self.sourcePath.path()+ '/' +self.deployment + '/' + "data" + '/'
+            # check for lock state
+            if QFile(self.dataPath + '/'+'*.lck').exists():
+                # we are locked
+                # get user name
+                lockfile=glob.glob(self.dataPath + '/'+'*.lck')
+                lockuser=lockfile[:-4]
+                # what's my username?
+                username = os.getlogin()
+                if username==lockuser:# i have this open, must have crashed or something.  delete lockfile and continue
+                    os.remove(self.dataPath + '/'+lockfile)
+                else:# stop from oopening!
+                    QMessageBox.warning(self, "ERROR", user+" has this deployment open. Go check with them.")
+                    return
+                    
+            # make a lockfile
+            username = os.getlogin()
+            self.lockfile=open(self.dataPath + '/'+username+".lck", "w")
+
             # get projects
             dlg=selectprojectdlg.SelectProjectDlg(self)
             if dlg.exec_():
@@ -643,7 +663,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.metadataGroup=self.projectDict['metadata_group']
 
             ################   HERE we will open a local "data db" ######################
-            self.dataPath = self.sourcePath.path()+ '/' +self.deployment + '/' + "data" + '/'
+
             #  check if the local SQLite database file exists
             if QDir(self.dataPath).exists():
                 #  check if the SQLite database file exists
@@ -797,135 +817,137 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
 
         
     def setupDeployment(self):
-        self.deploymentBox.setText(self.activeProject+":"+self.deployment)
-        # clear out gv transform
-        self.gvRight.resetTransform()
-        self.gvLeft.resetTransform()
-        # apply mask, if desired
-        if self.doMask:
-            val=self.settings['SubsampleMask']
-            vals=val.split(',')
-            rect=QRect(int(vals[0]), int(vals[1]), int(vals[2]), int(vals[3]))
-            self.gvRight.setSubsampleRect(rect)
-            self.gvLeft.setSubsampleRect(rect)
+        try:
+            self.deploymentBox.setText(self.activeProject+":"+self.deployment)
+            # clear out gv transform
+            self.gvRight.resetTransform()
+            self.gvLeft.resetTransform()
+            # apply mask, if desired
+            if self.doMask:
+                val=self.settings['SubsampleMask']
+                vals=val.split(',')
+                rect=QRect(int(vals[0]), int(vals[1]), int(vals[2]), int(vals[3]))
+                self.gvRight.setSubsampleRect(rect)
+                self.gvLeft.setSubsampleRect(rect)
 
-        # load in some fetcher properties
-        p=self.settings['FrameNumberIndices'].split('-')
-        self.imgNumInds=[int(p[0]), int(p[1])]
+            # load in some fetcher properties
+            p=self.settings['FrameNumberIndices'].split('-')
+            self.imgNumInds=[int(p[0]), int(p[1])]
 
-        if self.settings['ImageTimestampType'].strip()=='in_file_name':
-            self.imgTimestamp=[self.settings['ImageTimestampFormat'].strip(), int(self.settings['ImageTimestampStart'].strip())]
-        elif self.settings['ImageTimestampType'].strip()=='EXIF':
-            self.imgTimestamp=['exif',0]
-        else:
-            self.imgTimestamp=['NoTimestamp',0]
-
-        # get image names
-        self.LPath=self.deploymentPath + '/' + self.settings['LeftCameraImagePath']+ '/'
-        self.RPath=self.deploymentPath + '/' + self.settings['RightCameraImagePath']+ '/'
-        # check for validity
-        if not QDir(self.LPath).exists():
-            QMessageBox.warning(self, "ERROR", self.LPath+" Is not a valid folder.")
-            return False
-        if not QDir(self.RPath).exists():
-            QMessageBox.warning(self, "ERROR", self.RPath+" Is not a valid folder.")
-            return False
-        #  set the loading error var
-        self.__loadingError = False
-        #  create a couple of progress bars
-        self.leftPB = QProgressBar()
-        self.leftPB.setRange(0,100)
-        self.leftPB.setValue(0)
-        self.rightPB = QProgressBar()
-        self.rightPB.setRange(0,100)
-        self.rightPB.setValue(0)
-        self.statusBar.addWidget(self.leftPB)
-        self.statusBar.addWidget(self.rightPB)
-        # turn s**t on
-        for widget in self.recordEnableWidgets:
-            widget.setEnabled(True)
-        #  clear the viewers
-        for obj in [self.gvLeft, self.gvRight]:
-            obj.removeScene()
-            obj.createScene()
-        self.leftImageDict=self.getImageFiles(self.LPath,  self.leftPB)
-        if not self.leftImageDict:
-            return False
-        keys=list(self.leftImageDict.keys())
-        keys.sort()
-        self.leftImageFrames=keys
-        self.statusBar.removeWidget(self.leftPB)
-        self.leftPB = None
-        self.rightImageDict=self.getImageFiles(self.RPath,  self.rightPB)
-        keys=list(self.rightImageDict.keys())
-        keys.sort()
-        self.rightImageFrames=keys
-        self.statusBar.removeWidget(self.rightPB)
-        self.rightPB = None
-
-        self.noLoad=False
-        self.datadlg=dataviewdlg.DataViewDlg(self)
-        #position = self.appSettings.value('datawinposition', QPoint(10,10))
-        #self.datadlg.move(position)
-        self.datadlg.selectionEvent.connect(self.changeSelectionFromTable)
-        
-        self.datadlg.keyPress.connect(self.__keyPressEvent)
-        # load in stereo calibration
-
-        
-        if 'CalibrationFileName' in self.settings:
-            self.mode='stereo'
-            filename=str(self.settings['CalibrationFileName'])
-            filename=filename.strip()
-            if filename[-4:]=='.npz':
-                self.stereoComp.mode='openCV'
-            elif filename[-4:]=='.mat':
-                self.stereoComp.mode='matlab'
-            elif filename[-4:]=='json':
-                self.stereoComp.mode='json'
+            if self.settings['ImageTimestampType'].strip()=='in_file_name':
+                self.imgTimestamp=[self.settings['ImageTimestampFormat'].strip(), int(self.settings['ImageTimestampStart'].strip())]
+            elif self.settings['ImageTimestampType'].strip()=='EXIF':
+                self.imgTimestamp=['exif',0]
             else:
-                QMessageBox.warning(self, "ERROR", filename+" is not an accepted file type.")
+                self.imgTimestamp=['NoTimestamp',0]
+
+            # get image names
+            self.LPath=self.deploymentPath + '/' + self.settings['LeftCameraImagePath']+ '/'
+            self.RPath=self.deploymentPath + '/' + self.settings['RightCameraImagePath']+ '/'
+            # check for validity
+            if not QDir(self.LPath).exists():
+                QMessageBox.warning(self, "ERROR", self.LPath+" Is not a valid folder.")
                 return False
-            if QFile('../calibrations/' + filename).exists():
-                try:
-                    State, cal = self.stereoComp.importCalData('../calibrations/' + filename)
-                except:
-                    QMessageBox.warning(self, "ERROR", filename+ "  Has issues!!!")
+            if not QDir(self.RPath).exists():
+                QMessageBox.warning(self, "ERROR", self.RPath+" Is not a valid folder.")
+                return False
+            #  set the loading error var
+            self.__loadingError = False
+            #  create a couple of progress bars
+            self.leftPB = QProgressBar()
+            self.leftPB.setRange(0,100)
+            self.leftPB.setValue(0)
+            self.rightPB = QProgressBar()
+            self.rightPB.setRange(0,100)
+            self.rightPB.setValue(0)
+            self.statusBar.addWidget(self.leftPB)
+            self.statusBar.addWidget(self.rightPB)
+            # turn s**t on
+            for widget in self.recordEnableWidgets:
+                widget.setEnabled(True)
+            #  clear the viewers
+            for obj in [self.gvLeft, self.gvRight]:
+                obj.removeScene()
+                obj.createScene()
+            self.leftImageDict=self.getImageFiles(self.LPath,  self.leftPB)
+            keys=list(self.leftImageDict.keys())
+            keys.sort()
+            self.leftImageFrames=keys
+            self.statusBar.removeWidget(self.leftPB)
+            self.leftPB = None
+            self.rightImageDict=self.getImageFiles(self.RPath,  self.rightPB)
+            keys=list(self.rightImageDict.keys())
+            keys.sort()
+            self.rightImageFrames=keys
+            self.statusBar.removeWidget(self.rightPB)
+            self.rightPB = None
+
+            self.noLoad=False
+            self.datadlg=dataviewdlg.DataViewDlg(self)
+            #position = self.appSettings.value('datawinposition', QPoint(10,10))
+            #self.datadlg.move(position)
+            self.datadlg.selectionEvent.connect(self.changeSelectionFromTable)
+            
+            self.datadlg.keyPress.connect(self.__keyPressEvent)
+            # load in stereo calibration
+
+            
+            if 'CalibrationFileName' in self.settings:
+                self.mode='stereo'
+                filename=str(self.settings['CalibrationFileName'])
+                filename=filename.strip()
+                if filename[-4:]=='.npz':
+                    self.stereoComp.mode='openCV'
+                elif filename[-4:]=='.mat':
+                    self.stereoComp.mode='matlab'
+                elif filename[-4:]=='.yml':
+                    self.stereoComp.mode='yaml'
+                else:
+                    QMessageBox.warning(self, "ERROR", filename+" is not an accepted file type.")
+                    return False
+                if QFile('../calibrations/' + filename).exists():
+                    try:
+                        State, cal = self.stereoComp.importCalData('../calibrations/' + filename)
+                    except:
+                        QMessageBox.warning(self, "ERROR", filename+ "  Has issues!!!")
+                        return False
+                else:
+                    QMessageBox.warning(self, "ERROR", filename+" Is not located in the SEBASTES\calibration folder.  Please put it there.")
+                    return False
+                if not State:
+                    QMessageBox.warning(self, "ERROR", cal)
                     return False
             else:
-                QMessageBox.warning(self, "ERROR", filename+" Is not located in the SEBASTES\calibration folder.  Please put it there.")
-                return False
-            if not State:
-                QMessageBox.warning(self, "ERROR", cal)
-                return False
-        else:
-            self.mode='mono'
+                self.mode='mono'
 
-        #  try to get the camera orientations
-        if 'RotateRightImage' in self.settings:
-            self.gvRight.setRotation(self.settings['RotateRightImage'])
-        else:
-            #  no orientation data available for this camera
-            self.gvRight.setRotation('0')
-        if 'RotateLeftImage' in self.settings:
-            self.gvLeft.setRotation(self.settings['RotateLeftImage'])
-        else:
-            #  no orientation data available for this camera
-            self.gvLeft.setRotation('0')
+            #  try to get the camera orientations
+            if 'RotateRightImage' in self.settings:
+                self.gvRight.setRotation(self.settings['RotateRightImage'])
+            else:
+                #  no orientation data available for this camera
+                self.gvRight.setRotation('0')
+            if 'RotateLeftImage' in self.settings:
+                self.gvLeft.setRotation(self.settings['RotateLeftImage'])
+            else:
+                #  no orientation data available for this camera
+                self.gvLeft.setRotation('0')
 
 
-        self.minFr=min(min(self.leftImageFrames), min(self.rightImageFrames))
-        self.maxFr=max(max(self.leftImageFrames), max(self.rightImageFrames))
-        self.minFrame.setText(str(self.minFr))
-        self.maxFrame.setText(str(self.maxFr))
-        self.imageSlider.setMinimum(0)
-        self.imageSlider.setMaximum(len(self.leftImageDict)-1)
-        self.imageSlider.setSingleStep(1)
-        self.recordBtn.setEnabled(True)
-        self.toggleRecord()
-        self.imageSlider.setValue(1)
-        self.playBtn.setEnabled(True)
-        return True
+            self.minFr=min(min(self.leftImageFrames), min(self.rightImageFrames))
+            self.maxFr=max(max(self.leftImageFrames), max(self.rightImageFrames))
+            self.minFrame.setText(str(self.minFr))
+            self.maxFrame.setText(str(self.maxFr))
+            self.imageSlider.setMinimum(0)
+            self.imageSlider.setMaximum(len(self.leftImageDict)-1)
+            self.imageSlider.setSingleStep(1)
+            self.recordBtn.setEnabled(True)
+            self.toggleRecord()
+            self.imageSlider.setValue(1)
+            self.playBtn.setEnabled(True)
+            return True
+        except:
+            self.showError()
+            return
         
     def makeDB(self):
         file=open('../db/Project.db.sql')
@@ -2441,69 +2463,15 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
     def reloadData(self):
         if not self.recordBtn.isChecked():
             return
-        if self.makeBoxes:
-            # redraw boxes
-            query = self.dataDB.dbQuery("SELECT camera_id,species_group,origin_x,origin_y,width,height,target_number FROM bounding_boxes WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
-            for camera_id,species_group,origin_x,origin_y,width,height,target_number in query:
-                if camera_id=='left':
-                    imageObj=self.gvLeft
-                else:
-                    imageObj=self.gvRight
-                spcInd=None
-                for btn in self.spcButtons:
-                    if btn.text()==species_group:
-                        spcInd=self.spcButtons.index(btn)
-                        break
-                if not spcInd==None:
-                    col=self.spcColors[spcInd]
-                else:
-                    col=[255,  0,  0]
-                boxCoords=QRect(int(origin_x),int(origin_y),int(width),int(height))
-                boxObj = imageObj.addPolygon(boxCoords,color=col, thickness=self.guiSettings['BoxLineThickness'], selectable=True,
-                        selectThickness=4.0, selectColor=self.selColor)
-
-                self.boxMarks.update({boxObj:[int(target_number),  imageObj]})
-                #  and add a label - polygon labels are attached to the vertices and the first
-                #  argument is the index of the vertex you want to attach the label to. For
-                #  rubber band boxes, the verts are always ordered clockwise from the upper left
-                spcLabel=''
-                if self.guiSettings['LabelSpeciesParam']>0:
-                    spcLabel=species_group
-                    if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
-                        spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
-                boxObj.addLabel(0, target_number+" "+spcLabel, color=col, size=self.guiSettings['LabelTextSize'])
-
-        else:
-            # get frame level annotator
-            query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
-            current_tators, =query.first()
-            if current_tators==None:
-                current_tators=''
-            tators=current_tators.split('|')
-            if not self.annotator in tators:
-                # add our tator
-                if len(current_tators)>0:
-                    current_tators=current_tators+"|"+self.annotator
-                else:
-                    current_tators=self.annotator
-            self.annotatorLabel.setText(current_tators)
-            # draw targets
-            self.activeLine[self.gvLeft]=None
-            self.activeLine[self.gvRight]=None
-            query = self.dataDB.dbQuery("SELECT target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY FROM targets WHERE frame_number="+
-            self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
-            targetToDelete=[]
-            for target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY in query:
-                spcLabel=''
-                if self.guiSettings['LabelSpeciesParam']>0:
-                    spcLabel=species_group
-                    if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
-                        spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
-                # find out the class and appropriate color
-                if species_group in ['SceneRange',  'SceneMeasurement']:
-                    col=self.guiSettings['SceneColor']
-                    style='d'
-                else:
+        try:
+            if self.makeBoxes:
+                # redraw boxes
+                query = self.dataDB.dbQuery("SELECT camera_id,species_group,origin_x,origin_y,width,height,target_number FROM bounding_boxes WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
+                for camera_id,species_group,origin_x,origin_y,width,height,target_number in query:
+                    if camera_id=='left':
+                        imageObj=self.gvLeft
+                    else:
+                        imageObj=self.gvRight
                     spcInd=None
                     for btn in self.spcButtons:
                         if btn.text()==species_group:
@@ -2511,132 +2479,190 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                             break
                     if not spcInd==None:
                         col=self.spcColors[spcInd]
-                        style='o'
                     else:
+                        col=[255,  0,  0]
+                    boxCoords=QRect(int(origin_x),int(origin_y),int(width),int(height))
+                    boxObj = imageObj.addPolygon(boxCoords,color=col, thickness=self.guiSettings['BoxLineThickness'], selectable=True,
+                            selectThickness=4.0, selectColor=self.selColor)
+
+                    self.boxMarks.update({boxObj:[int(target_number),  imageObj]})
+                    #  and add a label - polygon labels are attached to the vertices and the first
+                    #  argument is the index of the vertex you want to attach the label to. For
+                    #  rubber band boxes, the verts are always ordered clockwise from the upper left
+                    spcLabel=''
+                    if self.guiSettings['LabelSpeciesParam']>0:
+                        spcLabel=species_group
+                        if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                            spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+                    boxObj.addLabel(0, target_number+" "+spcLabel, color=col, size=self.guiSettings['LabelTextSize'])
+
+            else:
+                # get frame level annotator
+                query = self.dataDB.dbQuery("SELECT annotator FROM FRAMES WHERE frame_number="+self.frameBox.text()+" AND deployment_id='"+self.deployment+"'")
+                current_tators, =query.first()
+                if current_tators==None:
+                    current_tators=''
+                tators=current_tators.split('|')
+                if not self.annotator in tators:
+                    # add our tator
+                    if len(current_tators)>0:
+                        current_tators=current_tators+"|"+self.annotator
+                    else:
+                        current_tators=self.annotator
+                self.annotatorLabel.setText(current_tators)
+                # draw targets
+                self.activeLine[self.gvLeft]=None
+                self.activeLine[self.gvRight]=None
+                query = self.dataDB.dbQuery("SELECT target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY FROM targets WHERE frame_number="+
+                self.frameBox.text()+" AND deployment_id='"+self.deployment+"'", self.dataDB)
+                targetToDelete=[]
+                for target_number, species_group, LX, LY, RX, RY, Range, Error, Length, LHX,LHY, LTX, LTY, RHX, RHY, RTX, RTY in query:
+                    spcLabel=''
+                    if self.guiSettings['LabelSpeciesParam']>0:
+                        spcLabel=species_group
+                        if len(spcLabel)>self.guiSettings['LabelSpeciesParam']:
+                            spcLabel=spcLabel[0:self.guiSettings['LabelSpeciesParam']]
+                    # find out the class and appropriate color
+                    if species_group in ['SceneRange',  'SceneMeasurement']:
                         col=self.guiSettings['SceneColor']
-                        style='o'
-                if RX==None and LX!=None:# this is in the left image only target
-                    marker = self.gvLeft.addMark(QPointF(float(LX), float(LY)), style='+', color=col,
-                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
+                        style='d'
+                    else:
+                        spcInd=None
+                        for btn in self.spcButtons:
+                            if btn.text()==species_group:
+                                spcInd=self.spcButtons.index(btn)
+                                break
+                        if not spcInd==None:
+                            col=self.spcColors[spcInd]
+                            style='o'
+                        else:
+                            col=self.guiSettings['SceneColor']
+                            style='o'
+                    if RX==None and LX!=None:# this is in the left image only target
+                        marker = self.gvLeft.addMark(QPointF(float(LX), float(LY)), style='+', color=col,
+                                                      size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
 
-                    self.pointMarks.update({marker:[int(target_number),  self.gvLeft]})
+                        self.pointMarks.update({marker:[int(target_number),  self.gvLeft]})
 
-                    marker.addLabel(target_number+" "+spcLabel, color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
-                    if not self.labelCheck.isChecked():
-                        marker.hideLabels(None)
+                        marker.addLabel(target_number+" "+spcLabel, color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                        if not self.labelCheck.isChecked():
+                            marker.hideLabels(None)
 
-                elif LX==None and RX!=None:# this is in the right image only target
-                    marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style='+', color=col,
-                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                    
-                    marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
-                    self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
-                    if not self.labelCheck.isChecked():
-                        marker.hideLabels(None)
-                elif RX!=None and LX!=None:# this is a stereo target
-
-                    marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style=style, color=col,
-                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                    self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
-                    marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
-                    if not self.labelCheck.isChecked():
-                        marker.hideLabels(None)
-                    marker = self.gvLeft.addMark(QPointF(float(LX), float(LY)), style=style, color=col,
-                                                  size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
-                    self.pointMarks.update({marker:[int(target_number),  self.gvLeft]})
-                    targetLabel=target_number +" r = "+str(round(float(Range), 2))+"  e = "+str(round(float(Error), 2))
-                    if self.guiSettings['ShowClassOnLabel']=='true':
-                        targetLabel=targetLabel+' '+species_group
-                    marker.addLabel(targetLabel+" "+spcLabel, color=col,size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
-                    if not self.labelCheck.isChecked():
-                        marker.hideLabels(None)
-                # put on measurements as well
-                if not LHX==None: #line
-                    if species_group == 'SceneMeasurement':  #this is a line only object
-                        col=self.guiSettings['SceneColor']
-                    else:# this is a measurement line associated with a target
-                        col=self.guiSettings['TargetLineColor']
-    #                print(query.value(2).toString())
-                    stPoint=QPointF(float(LHX), float(LHY))
-                    endPoint=QPointF(float(LTX), float(LTY))
-                    if stPoint==endPoint:# this will be prevented in the future!
-                        QMessageBox.warning(self, "ERROR", "This Target has a dimension line that starts and ends at the same point, which is an Error.  The target will be deleted.")
-                        targetToDelete.append(target_number)
-                        continue
-                    lineObjsL=self.gvLeft.addDimensionLine(stPoint,endPoint, taillength=self.guiSettings['MeasureLineTailLength'], thickness=self.guiSettings['MeasureLineWidth'],  color=col)
-                    self.lineMarks.update({lineObjsL:[int(target_number),  self.gvLeft]})
-                    # right image
-                    stPoint=QPointF(float(RHX), float(RHY))
-                    endPoint=QPointF(float(RTX), float(RTY))
-                    if stPoint==endPoint:# this will be prevented in the future!
-                        QMessageBox.warning(self, "ERROR", "This Target has a dimension line that starts and ends at the same point, which is an Error.  The target will be deleted.")
-                        targetToDelete.append(target_number)
-                        continue
-                    lineObjs=self.gvRight.addDimensionLine(stPoint,endPoint, taillength=self.guiSettings['MeasureLineTailLength'], thickness=self.guiSettings['MeasureLineWidth'], color=col)
-                    self.lineMarks.update({lineObjs:[int(target_number),  self.gvRight]})
-                    lineObjsL.addLabel(QPointF(float(LHX), float(LHY)), "l = "+str(round(float(Length), 2))+" e = "+str(round(float(Error), 2)), color=col,  size=self.guiSettings['LabelTextSize'])
-                    if not self.labelCheck.isChecked():
-                        lineObjsL.hideLabels(None)
+                    elif LX==None and RX!=None:# this is in the right image only target
+                        marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style='+', color=col,
+                                                      size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
                         
+                        marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                        self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
+                        if not self.labelCheck.isChecked():
+                            marker.hideLabels(None)
+                    elif RX!=None and LX!=None:# this is a stereo target
 
-                    
-            # delete bad target (temporary)
-            for t in targetToDelete:
-                self.dataDB.dbExec("DELETE FROM targets WHERE frame_number="+self.frameBox.text()+" AND target_number="+t+"  AND deployment_ID='"+self.deployment+"'", self.dataDB)
-            # relod frame metadata
-            if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
-                if 'ExclusiveRadioBox1' in self.metadataTypesDict:
-                    query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
-                    self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox1']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
-                    # this should be only one
-                    radioBtnTag1,  val=query.first()
-                    if radioBtnTag1:
-                        for tag in self.radioBtnTags1:
-                            if tag.text()==radioBtnTag1:
-                                tag.setChecked(True)
-                                
-                if 'ExclusiveRadioBox2' in self.metadataTypesDict:
-                    query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
-                    self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox2']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
-                    # this should be only one
-                    radioBtnTag2,  val=query.first()
-                    if radioBtnTag2:
-                        for tag in self.radioBtnTags2:
-                            if tag.text()==radioBtnTag2:
-                                tag.setChecked(True)
-                                
-                if 'ExclusiveRadioBox3' in self.metadataTypesDict:
-                    query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
-                    self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox3']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
-                    # this should be only one
-                    radioBtnTag3,  val=query.first()
-                    if radioBtnTag3:
-                        for tag in self.radioBtnTags3:
-                            if tag.text()==radioBtnTag3:
-                                tag.setChecked(True)
-                                
-                if 'LineEdit' in self.metadataTypesDict:
-                    query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
-                    self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['LineEdit']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
-                    for lineEditTag,  val in query:
-                        if lineEditTag:
-                            for i in list(range(len(self.metadataLineEditLabels))):
-                                if self.metadataLineEditLabels[i].text()==lineEditTag:
-                                    self.metadataLineEdits[i].setText(val)
+                        marker = self.gvRight.addMark(QPointF(float(RX), float(RY)), style=style, color=col,
+                                                      size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
+                        self.pointMarks.update({marker:[int(target_number),  self.gvRight]})
+                        marker.addLabel(target_number+" "+spcLabel , color=col,  size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                        if not self.labelCheck.isChecked():
+                            marker.hideLabels(None)
+                        marker = self.gvLeft.addMark(QPointF(float(LX), float(LY)), style=style, color=col,
+                                                      size=1.0, thickness=1.0, alpha=255, selectThickness=self.selThickness,  selectColor=self.selColor)
+                        self.pointMarks.update({marker:[int(target_number),  self.gvLeft]})
+                        targetLabel=target_number +" r = "+str(round(float(Range), 2))+"  e = "+str(round(float(Error), 2))
+                        if self.guiSettings['ShowClassOnLabel']=='true':
+                            targetLabel=targetLabel+' '+species_group
+                        marker.addLabel(targetLabel+" "+spcLabel, color=col,size=self.guiSettings['LabelTextSize'], offset=self.textOffset, name='tnumber')
+                        if not self.labelCheck.isChecked():
+                            marker.hideLabels(None)
+                    # put on measurements as well
+                    if not LHX==None: #line
+                        if species_group == 'SceneMeasurement':  #this is a line only object
+                            col=self.guiSettings['SceneColor']
+                        else:# this is a measurement line associated with a target
+                            col=self.guiSettings['TargetLineColor']
+        #                print(query.value(2).toString())
+                        stPoint=QPointF(float(LHX), float(LHY))
+                        endPoint=QPointF(float(LTX), float(LTY))
+                        if stPoint==endPoint:# this will be prevented in the future!
+                            QMessageBox.warning(self, "ERROR", "This Target has a dimension line that starts and ends at the same point, which is an Error.  The target will be deleted.")
+                            targetToDelete.append(target_number)
+                            continue
+                        lineObjsL=self.gvLeft.addDimensionLine(stPoint,endPoint, taillength=self.guiSettings['MeasureLineTailLength'], thickness=self.guiSettings['MeasureLineWidth'],  color=col)
+                        self.lineMarks.update({lineObjsL:[int(target_number),  self.gvLeft]})
+                        # right image
+                        stPoint=QPointF(float(RHX), float(RHY))
+                        endPoint=QPointF(float(RTX), float(RTY))
+                        if stPoint==endPoint:# this will be prevented in the future!
+                            QMessageBox.warning(self, "ERROR", "This Target has a dimension line that starts and ends at the same point, which is an Error.  The target will be deleted.")
+                            targetToDelete.append(target_number)
+                            continue
+                        lineObjs=self.gvRight.addDimensionLine(stPoint,endPoint, taillength=self.guiSettings['MeasureLineTailLength'], thickness=self.guiSettings['MeasureLineWidth'], color=col)
+                        self.lineMarks.update({lineObjs:[int(target_number),  self.gvRight]})
+                        lineObjsL.addLabel(QPointF(float(LHX), float(LHY)), "l = "+str(round(float(Length), 2))+" e = "+str(round(float(Error), 2)), color=col,  size=self.guiSettings['LabelTextSize'])
+                        if not self.labelCheck.isChecked():
+                            lineObjsL.hideLabels(None)
+                            
+
+                        
+                # delete bad target (temporary)
+                for t in targetToDelete:
+                    self.dataDB.dbExec("DELETE FROM targets WHERE frame_number="+self.frameBox.text()+" AND target_number="+t+"  AND deployment_ID='"+self.deployment+"'", self.dataDB)
+                # relod frame metadata
+                if self.settings['CollectMetadata'].lower()=='true' or self.settings['CollectMetadata'].lower()=='yes':
+                    if 'ExclusiveRadioBox1' in self.metadataTypesDict:
+                        query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
+                        self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox1']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
+                        # this should be only one
+                        radioBtnTag1,  val=query.first()
+                        if radioBtnTag1:
+                            for tag in self.radioBtnTags1:
+                                if tag.text()==radioBtnTag1:
+                                    tag.setChecked(True)
                                     
-                if 'CheckBox' in self.metadataTypesDict:
-                    query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
-                    self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['CheckBox']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
-                    for checkBoxTag,  val in query:
-                        if checkBoxTag:
-                            for i in list(range(len(self.metadataLineEditLabels))):
-                                if self.metadataCheckBoxes[i].text()==checkBoxTag:
-                                    if val=='Checked':
-                                        self.metadataCheckBoxes[i].setChecked(True)
-                                    else:
-                                        self.metadataCheckBoxes[i].setChecked(False)
-                frame=self.leftImageFrames[self.imageSlider.value()]
-                self.frameCommentDlg.showComment(str(frame))
+                    if 'ExclusiveRadioBox2' in self.metadataTypesDict:
+                        query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
+                        self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox2']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
+                        # this should be only one
+                        radioBtnTag2,  val=query.first()
+                        if radioBtnTag2:
+                            for tag in self.radioBtnTags2:
+                                if tag.text()==radioBtnTag2:
+                                    tag.setChecked(True)
+                                    
+                    if 'ExclusiveRadioBox3' in self.metadataTypesDict:
+                        query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
+                        self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['ExclusiveRadioBox3']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
+                        # this should be only one
+                        radioBtnTag3,  val=query.first()
+                        if radioBtnTag3:
+                            for tag in self.radioBtnTags3:
+                                if tag.text()==radioBtnTag3:
+                                    tag.setChecked(True)
+                                    
+                    if 'LineEdit' in self.metadataTypesDict:
+                        query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
+                        self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['LineEdit']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
+                        for lineEditTag,  val in query:
+                            if lineEditTag:
+                                for i in list(range(len(self.metadataLineEditLabels))):
+                                    if self.metadataLineEditLabels[i].text()==lineEditTag:
+                                        self.metadataLineEdits[i].setText(val)
+                                        
+                    if 'CheckBox' in self.metadataTypesDict:
+                        query = self.dataDB.dbQuery("SELECT metadata_tag, metadata_value FROM FRAME_METADATA WHERE frame_number="+
+                        self.frameBox.text()+" AND metadata_group='"+self.metadataGroup+"' AND metadata_type='"+self.metadataTypesDict['CheckBox']+"' AND deployment_id='"+self.deployment+"'", self.dataDB)
+                        for checkBoxTag,  val in query:
+                            if checkBoxTag:
+                                for i in list(range(len(self.metadataLineEditLabels))):
+                                    if self.metadataCheckBoxes[i].text()==checkBoxTag:
+                                        if val=='Checked':
+                                            self.metadataCheckBoxes[i].setChecked(True)
+                                        else:
+                                            self.metadataCheckBoxes[i].setChecked(False)
+                    frame=self.leftImageFrames[self.imageSlider.value()]
+                    self.frameCommentDlg.showComment(str(frame))
+        except:
+            self.showError()
+            
                 
     def clearMetadataSelections(self):
         if not self.metadataStickyBox.isChecked():# reset autoexclusive buttons
@@ -2718,7 +2744,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             xRp=self.stereoComp.projectPoint(XR, 'R')
             width=max(self.gvLeft.imgPixmap.width(), self.gvRight.imgPixmap.width())
             error=self.stereoComp.computeError(xL,xLp,xR,xRp)
-            error=error/width*10000
+            #error=error/width*10000
 
             Range=round(sqrt(lx**2+ly**2+lz**2), len(str(unit)))
             self.targetStereoData=[Range, error,  lx, ly, lz]
@@ -3157,6 +3183,14 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             self.writeFrameData()
             self.dataDB.dbClose()
             self.writeDatatoCSV()
+            
+        # remove lockfile
+        username = os.getlogin()
+        lockfile=self.dataPath + '/'+username+'.lck'
+        if QFile(lockfile).exists():
+            self.lockfile.close()
+            os.remove(lockfile)
+        
         event.accept()
 
 
