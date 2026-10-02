@@ -1,87 +1,126 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\targetDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'targetDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFormLayout,
+    QFrame, QHBoxLayout, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QWidget)
 
 class Ui_targetDlg(object):
     def setupUi(self, targetDlg):
-        targetDlg.setObjectName("targetDlg")
+        if not targetDlg.objectName():
+            targetDlg.setObjectName(u"targetDlg")
         targetDlg.resize(300, 217)
-        self.formLayout = QtWidgets.QFormLayout(targetDlg)
-        self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
-        self.formLayout.setObjectName("formLayout")
-        self.label = QtWidgets.QLabel(targetDlg)
-        self.label.setObjectName("label")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
-        self.targetLabel = QtWidgets.QLabel(targetDlg)
-        self.targetLabel.setMinimumSize(QtCore.QSize(0, 23))
-        self.targetLabel.setFrameShape(QtWidgets.QFrame.Box)
-        self.targetLabel.setText("")
-        self.targetLabel.setObjectName("targetLabel")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.targetLabel)
-        self.label_3 = QtWidgets.QLabel(targetDlg)
-        self.label_3.setObjectName("label_3")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.classBox = QtWidgets.QComboBox(targetDlg)
-        self.classBox.setMinimumSize(QtCore.QSize(0, 23))
-        self.classBox.setObjectName("classBox")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.classBox)
-        self.frame = QtWidgets.QFrame(targetDlg)
-        self.frame.setMinimumSize(QtCore.QSize(0, 50))
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.cancelBtn = QtWidgets.QPushButton(self.frame)
-        self.cancelBtn.setObjectName("cancelBtn")
+        self.formLayout = QFormLayout(targetDlg)
+        self.formLayout.setObjectName(u"formLayout")
+        self.formLayout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        self.label = QLabel(targetDlg)
+        self.label.setObjectName(u"label")
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.LabelRole, self.label)
+
+        self.targetLabel = QLabel(targetDlg)
+        self.targetLabel.setObjectName(u"targetLabel")
+        self.targetLabel.setMinimumSize(QSize(0, 23))
+        self.targetLabel.setFrameShape(QFrame.Box)
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.targetLabel)
+
+        self.label_3 = QLabel(targetDlg)
+        self.label_3.setObjectName(u"label_3")
+
+        self.formLayout.setWidget(1, QFormLayout.ItemRole.LabelRole, self.label_3)
+
+        self.classBox = QComboBox(targetDlg)
+        self.classBox.setObjectName(u"classBox")
+        self.classBox.setMinimumSize(QSize(0, 23))
+
+        self.formLayout.setWidget(1, QFormLayout.ItemRole.FieldRole, self.classBox)
+
+        self.frame = QFrame(targetDlg)
+        self.frame.setObjectName(u"frame")
+        self.frame.setMinimumSize(QSize(0, 50))
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.cancelBtn = QPushButton(self.frame)
+        self.cancelBtn.setObjectName(u"cancelBtn")
+
         self.horizontalLayout.addWidget(self.cancelBtn)
-        self.saveBtn = QtWidgets.QPushButton(self.frame)
-        self.saveBtn.setObjectName("saveBtn")
+
+        self.saveBtn = QPushButton(self.frame)
+        self.saveBtn.setObjectName(u"saveBtn")
+
         self.horizontalLayout.addWidget(self.saveBtn)
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.SpanningRole, self.frame)
-        self.label_2 = QtWidgets.QLabel(targetDlg)
-        self.label_2.setObjectName("label_2")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_2)
-        self.measureLabel = QtWidgets.QLabel(targetDlg)
-        self.measureLabel.setMinimumSize(QtCore.QSize(0, 23))
-        self.measureLabel.setFrameShape(QtWidgets.QFrame.Box)
-        self.measureLabel.setText("")
-        self.measureLabel.setObjectName("measureLabel")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.measureLabel)
-        self.label_4 = QtWidgets.QLabel(targetDlg)
-        self.label_4.setObjectName("label_4")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_4)
-        self.rangeLabel = QtWidgets.QLabel(targetDlg)
-        self.rangeLabel.setMinimumSize(QtCore.QSize(0, 23))
-        self.rangeLabel.setFrameShape(QtWidgets.QFrame.Box)
-        self.rangeLabel.setText("")
-        self.rangeLabel.setObjectName("rangeLabel")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.rangeLabel)
-        self.measureBtn = QtWidgets.QPushButton(targetDlg)
-        self.measureBtn.setMinimumSize(QtCore.QSize(0, 28))
-        self.measureBtn.setObjectName("measureBtn")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.measureBtn)
+
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.SpanningRole, self.frame)
+
+        self.label_2 = QLabel(targetDlg)
+        self.label_2.setObjectName(u"label_2")
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_2)
+
+        self.measureLabel = QLabel(targetDlg)
+        self.measureLabel.setObjectName(u"measureLabel")
+        self.measureLabel.setMinimumSize(QSize(0, 23))
+        self.measureLabel.setFrameShape(QFrame.Box)
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.measureLabel)
+
+        self.label_4 = QLabel(targetDlg)
+        self.label_4.setObjectName(u"label_4")
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_4)
+
+        self.rangeLabel = QLabel(targetDlg)
+        self.rangeLabel.setObjectName(u"rangeLabel")
+        self.rangeLabel.setMinimumSize(QSize(0, 23))
+        self.rangeLabel.setFrameShape(QFrame.Box)
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self.rangeLabel)
+
+        self.measureBtn = QPushButton(targetDlg)
+        self.measureBtn.setObjectName(u"measureBtn")
+        self.measureBtn.setMinimumSize(QSize(0, 28))
+
+        self.formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.measureBtn)
+
 
         self.retranslateUi(targetDlg)
-        QtCore.QMetaObject.connectSlotsByName(targetDlg)
+
+        QMetaObject.connectSlotsByName(targetDlg)
+    # setupUi
 
     def retranslateUi(self, targetDlg):
-        _translate = QtCore.QCoreApplication.translate
-        targetDlg.setWindowTitle(_translate("targetDlg", "Target Actions"))
-        self.label.setText(_translate("targetDlg", "Target ID"))
-        self.label_3.setText(_translate("targetDlg", "Class"))
-        self.cancelBtn.setText(_translate("targetDlg", "Cancel"))
-        self.saveBtn.setText(_translate("targetDlg", "Save"))
-        self.label_2.setText(_translate("targetDlg", "Length"))
-        self.label_4.setText(_translate("targetDlg", "Range"))
-        self.measureBtn.setText(_translate("targetDlg", "Measure"))
+        targetDlg.setWindowTitle(QCoreApplication.translate("targetDlg", u"Target Actions", None))
+        self.label.setText(QCoreApplication.translate("targetDlg", u"Target ID", None))
+        self.targetLabel.setText("")
+        self.label_3.setText(QCoreApplication.translate("targetDlg", u"Class", None))
+        self.cancelBtn.setText(QCoreApplication.translate("targetDlg", u"Cancel", None))
+        self.saveBtn.setText(QCoreApplication.translate("targetDlg", u"Save", None))
+        self.label_2.setText(QCoreApplication.translate("targetDlg", u"Length", None))
+        self.measureLabel.setText("")
+        self.label_4.setText(QCoreApplication.translate("targetDlg", u"Range", None))
+        self.rangeLabel.setText("")
+        self.measureBtn.setText(QCoreApplication.translate("targetDlg", u"Measure", None))
+    # retranslateUi
+

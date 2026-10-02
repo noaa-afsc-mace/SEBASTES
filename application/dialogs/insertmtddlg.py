@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_InsertMtdDlg
 
 class InsertMtdDlg(QDialog, ui_InsertMtdDlg.Ui_insertMtdDlg):
@@ -13,11 +13,11 @@ class InsertMtdDlg(QDialog, ui_InsertMtdDlg.Ui_insertMtdDlg):
         self.out_of_sorts=[]
         self.categoryBox.addItems(['ExclusiveRadioBox1', 'ExclusiveRadioBox2', 'LineEdit', 'CheckBox'])
         
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
-    @pyqtSlot()
+    @Slot()
     def save(self):
         if self.metadataEdit.text()=='':
             QMessageBox.warning(self, "ERROR", "No species entered!")

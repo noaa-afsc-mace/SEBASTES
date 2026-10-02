@@ -1,80 +1,122 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\CameraDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'CameraDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QDialog, QFormLayout, QFrame,
+    QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+    QPushButton, QSizePolicy, QSpacerItem, QTextEdit,
+    QWidget)
 
 class Ui_cameraDlg(object):
     def setupUi(self, cameraDlg):
-        cameraDlg.setObjectName("cameraDlg")
+        if not cameraDlg.objectName():
+            cameraDlg.setObjectName(u"cameraDlg")
         cameraDlg.resize(400, 381)
-        self.formLayout = QtWidgets.QFormLayout(cameraDlg)
-        self.formLayout.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
-        self.formLayout.setObjectName("formLayout")
-        self.label = QtWidgets.QLabel(cameraDlg)
-        self.label.setObjectName("label")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
-        self.cameraGearBox = QtWidgets.QLineEdit(cameraDlg)
-        self.cameraGearBox.setObjectName("cameraGearBox")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.cameraGearBox)
-        self.label_8 = QtWidgets.QLabel(cameraDlg)
-        self.label_8.setObjectName("label_8")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_8)
-        self.lCameraDesc = QtWidgets.QPlainTextEdit(cameraDlg)
-        self.lCameraDesc.setObjectName("lCameraDesc")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.lCameraDesc)
-        self.label_2 = QtWidgets.QLabel(cameraDlg)
-        self.label_2.setObjectName("label_2")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_2)
-        self.rCameraDesc = QtWidgets.QTextEdit(cameraDlg)
-        self.rCameraDesc.setObjectName("rCameraDesc")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.rCameraDesc)
-        self.frame = QtWidgets.QFrame(cameraDlg)
-        self.frame.setMinimumSize(QtCore.QSize(0, 40))
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.cancelBtn = QtWidgets.QPushButton(self.frame)
-        self.cancelBtn.setObjectName("cancelBtn")
+        self.formLayout = QFormLayout(cameraDlg)
+        self.formLayout.setObjectName(u"formLayout")
+        self.formLayout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        self.label = QLabel(cameraDlg)
+        self.label.setObjectName(u"label")
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.LabelRole, self.label)
+
+        self.cameraGearBox = QLineEdit(cameraDlg)
+        self.cameraGearBox.setObjectName(u"cameraGearBox")
+
+        self.formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.cameraGearBox)
+
+        self.label_8 = QLabel(cameraDlg)
+        self.label_8.setObjectName(u"label_8")
+
+        self.formLayout.setWidget(2, QFormLayout.ItemRole.LabelRole, self.label_8)
+
+        self.lCameraDesc = QPlainTextEdit(cameraDlg)
+        self.lCameraDesc.setObjectName(u"lCameraDesc")
+
+        self.formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.lCameraDesc)
+
+        self.label_2 = QLabel(cameraDlg)
+        self.label_2.setObjectName(u"label_2")
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_2)
+
+        self.rCameraDesc = QTextEdit(cameraDlg)
+        self.rCameraDesc.setObjectName(u"rCameraDesc")
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.rCameraDesc)
+
+        self.frame = QFrame(cameraDlg)
+        self.frame.setObjectName(u"frame")
+        self.frame.setMinimumSize(QSize(0, 40))
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.cancelBtn = QPushButton(self.frame)
+        self.cancelBtn.setObjectName(u"cancelBtn")
+
         self.horizontalLayout.addWidget(self.cancelBtn)
-        self.okBtn = QtWidgets.QPushButton(self.frame)
-        self.okBtn.setObjectName("okBtn")
+
+        self.okBtn = QPushButton(self.frame)
+        self.okBtn.setObjectName(u"okBtn")
+
         self.horizontalLayout.addWidget(self.okBtn)
-        self.formLayout.setWidget(6, QtWidgets.QFormLayout.FieldRole, self.frame)
-        self.bsEdit = QtWidgets.QLineEdit(cameraDlg)
-        self.bsEdit.setObjectName("bsEdit")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.bsEdit)
-        self.label_3 = QtWidgets.QLabel(cameraDlg)
-        self.label_3.setObjectName("label_3")
-        self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.descEdit = QtWidgets.QTextEdit(cameraDlg)
-        self.descEdit.setObjectName("descEdit")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.descEdit)
-        self.label_4 = QtWidgets.QLabel(cameraDlg)
-        self.label_4.setObjectName("label_4")
-        self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_4)
+
+
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.frame)
+
+        self.bsEdit = QLineEdit(cameraDlg)
+        self.bsEdit.setObjectName(u"bsEdit")
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self.bsEdit)
+
+        self.label_3 = QLabel(cameraDlg)
+        self.label_3.setObjectName(u"label_3")
+
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.LabelRole, self.label_3)
+
+        self.descEdit = QTextEdit(cameraDlg)
+        self.descEdit.setObjectName(u"descEdit")
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.FieldRole, self.descEdit)
+
+        self.label_4 = QLabel(cameraDlg)
+        self.label_4.setObjectName(u"label_4")
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.label_4)
+
 
         self.retranslateUi(cameraDlg)
-        QtCore.QMetaObject.connectSlotsByName(cameraDlg)
+
+        QMetaObject.connectSlotsByName(cameraDlg)
+    # setupUi
 
     def retranslateUi(self, cameraDlg):
-        _translate = QtCore.QCoreApplication.translate
-        cameraDlg.setWindowTitle(_translate("cameraDlg", "Camera Gear"))
-        self.label.setText(_translate("cameraDlg", "Camera Gear"))
-        self.label_8.setText(_translate("cameraDlg", "Left Camera"))
-        self.label_2.setText(_translate("cameraDlg", "Right Camera"))
-        self.cancelBtn.setText(_translate("cameraDlg", "cancel"))
-        self.okBtn.setText(_translate("cameraDlg", "OK"))
-        self.label_3.setText(_translate("cameraDlg", "Baseline \n"
-"separation"))
-        self.label_4.setText(_translate("cameraDlg", "Description"))
+        cameraDlg.setWindowTitle(QCoreApplication.translate("cameraDlg", u"Camera Gear", None))
+        self.label.setText(QCoreApplication.translate("cameraDlg", u"Camera Gear", None))
+        self.label_8.setText(QCoreApplication.translate("cameraDlg", u"Left Camera", None))
+        self.label_2.setText(QCoreApplication.translate("cameraDlg", u"Right Camera", None))
+        self.cancelBtn.setText(QCoreApplication.translate("cameraDlg", u"cancel", None))
+        self.okBtn.setText(QCoreApplication.translate("cameraDlg", u"OK", None))
+        self.label_3.setText(QCoreApplication.translate("cameraDlg", u"Baseline \n"
+"separation", None))
+        self.label_4.setText(QCoreApplication.translate("cameraDlg", u"Description", None))
+    # retranslateUi
+

@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_AnnotatorDlg
 
 class AnnotatorDlg(QDialog, ui_AnnotatorDlg.Ui_annotatorDlg):
@@ -12,7 +12,7 @@ class AnnotatorDlg(QDialog, ui_AnnotatorDlg.Ui_annotatorDlg):
         self.okBtn.clicked.connect(self.close)
         self.cancelBtn.clicked.connect(self.close)
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         if self.sender()==self.okBtn:
             # check to see if somethig was entered

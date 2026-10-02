@@ -5,9 +5,9 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
 
 class QIVPolygonItem(QGraphicsItem):
@@ -39,7 +39,7 @@ class QIVPolygonItem(QGraphicsItem):
                 selectColor=None, alpha=255, linestyle='=', fill=None,
                 selectable=False, selectThickness=2.0, movable=False,
                 ignoresTransforms=False, closed=True, parent=None,
-                name='QIVPolygonItem'):
+                name='QIVPolygonItem',isCosmetic=False):
 
         #  call the parent class init
         super(QIVPolygonItem, self).__init__(parent)
@@ -54,6 +54,7 @@ class QIVPolygonItem(QGraphicsItem):
         self.selected = False
         self.selectColor = selectColor
         self.color = color
+        self.isCosmetic = isCosmetic
 
         #  create the pen
         self.pen = self.getPen(self.color, self.alpha, self.linestyle, self.thickness)
@@ -83,9 +84,9 @@ class QIVPolygonItem(QGraphicsItem):
         #  usually this object is part of a QGraphicsItemGroup so we don't
         #  want it to be selectable, nor movable and unlike marks, we usually
         #  want it to honor transforms and the defaults above reflect this.
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selectable)
-        self.setFlag(QGraphicsItem.ItemIsMovable, movable)
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, ignoresTransforms)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, selectable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, movable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, ignoresTransforms)
 
 
     def __getitem__(self, key):
@@ -109,8 +110,7 @@ class QIVPolygonItem(QGraphicsItem):
         self.polygon.clear()
 
         #  handle QRect and QRectF objects
-        if ((vertices.__class__.__name__.lower() == 'qrectf') or
-           (vertices.__class__.__name__.lower() == 'qrect')):
+        if (vertices.__class__.__name__.lower() == 'qrectf'):
             #  append the QRect vertices to our polygon
             self.polygon.append(vertices.topLeft())
             self.polygon.append(vertices.topRight())
@@ -118,6 +118,14 @@ class QIVPolygonItem(QGraphicsItem):
             self.polygon.append(vertices.bottomLeft())
             #  close the polygon
             self.polygon.append(vertices.topLeft())
+        elif (vertices.__class__.__name__.lower() == 'qrect'):
+            #  append the QRect vertices to our polygon
+            self.polygon.append(QPointF(vertices.topLeft()))
+            self.polygon.append(QPointF(vertices.topRight()))
+            self.polygon.append(QPointF(vertices.bottomRight()))
+            self.polygon.append(QPointF(vertices.bottomLeft()))
+            #  close the polygon
+            self.polygon.append(QPointF(vertices.topLeft()))
         else:
             #  assume this is a list of verts of
             for v in vertices:
@@ -360,11 +368,16 @@ class QIVPolygonItem(QGraphicsItem):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
+
+        #  If we're a "cosmetic" line (non-scaling) set the cosmetic
+        #  property of the pen.
+        if self.isCosmetic:
+            pen.setCosmetic(True)
 
         return pen
 

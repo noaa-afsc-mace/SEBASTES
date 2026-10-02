@@ -1,45 +1,66 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\infoDialog.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'infoDialog.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QDialog, QFrame, QHBoxLayout,
+    QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem,
+    QVBoxLayout, QWidget)
 
 class Ui_infoDialog(object):
     def setupUi(self, infoDialog):
-        infoDialog.setObjectName("infoDialog")
+        if not infoDialog.objectName():
+            infoDialog.setObjectName(u"infoDialog")
         infoDialog.resize(400, 650)
-        self.verticalLayout = QtWidgets.QVBoxLayout(infoDialog)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.statusText = QtWidgets.QPlainTextEdit(infoDialog)
+        self.verticalLayout = QVBoxLayout(infoDialog)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.statusText = QPlainTextEdit(infoDialog)
+        self.statusText.setObjectName(u"statusText")
         self.statusText.setAcceptDrops(False)
         self.statusText.setUndoRedoEnabled(False)
         self.statusText.setReadOnly(True)
         self.statusText.setCenterOnScroll(False)
-        self.statusText.setObjectName("statusText")
+
         self.verticalLayout.addWidget(self.statusText)
-        self.frame = QtWidgets.QFrame(infoDialog)
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.saveBtn = QtWidgets.QPushButton(self.frame)
-        self.saveBtn.setObjectName("saveBtn")
+
+        self.frame = QFrame(infoDialog)
+        self.frame.setObjectName(u"frame")
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.saveBtn = QPushButton(self.frame)
+        self.saveBtn.setObjectName(u"saveBtn")
+
         self.horizontalLayout.addWidget(self.saveBtn)
+
+
         self.verticalLayout.addWidget(self.frame)
 
+
         self.retranslateUi(infoDialog)
-        QtCore.QMetaObject.connectSlotsByName(infoDialog)
+
+        QMetaObject.connectSlotsByName(infoDialog)
+    # setupUi
 
     def retranslateUi(self, infoDialog):
-        _translate = QtCore.QCoreApplication.translate
-        infoDialog.setWindowTitle(_translate("infoDialog", "Information Dialog"))
-        self.saveBtn.setText(_translate("infoDialog", "OK"))
+        infoDialog.setWindowTitle(QCoreApplication.translate("infoDialog", u"Information Dialog", None))
+        self.saveBtn.setText(QCoreApplication.translate("infoDialog", u"OK", None))
+    # retranslateUi
+

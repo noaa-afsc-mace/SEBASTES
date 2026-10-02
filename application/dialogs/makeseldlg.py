@@ -1,8 +1,8 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6 import QtSql
 from dialogs.ui import  ui_MakeSelDlg
 
 class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
@@ -19,7 +19,7 @@ class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
         self.viewModel = QtSql.QSqlQueryModel()
         self.dataView.setModel(self.viewModel)
         self.viewSelModel=QItemSelectionModel(self.viewModel, self.dataView)
-        self.dataView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.dataView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.dataView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.dataView.setSelectionModel(self.viewSelModel)
         self.viewSelModel.selectionChanged.connect(self.selectionAction)
@@ -69,11 +69,11 @@ class MakeSelDlg(QDialog, ui_MakeSelDlg.Ui_makeSelDlg):
         index1= self.viewModel.index(selObj.row(), 0, QModelIndex())
         self.value=self.viewModel.data(index1, Qt.DisplayRole)
            
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         if self.value==None:
             QMessageBox.warning(self, "ERROR", "Ya didn't select anythin'!")

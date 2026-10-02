@@ -1,119 +1,171 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\SettingsDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'SettingsDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QDialog, QFrame,
+    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 class Ui_settingsDlg(object):
     def setupUi(self, settingsDlg):
-        settingsDlg.setObjectName("settingsDlg")
+        if not settingsDlg.objectName():
+            settingsDlg.setObjectName(u"settingsDlg")
         settingsDlg.resize(404, 427)
-        self.verticalLayout = QtWidgets.QVBoxLayout(settingsDlg)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.frame_2 = QtWidgets.QFrame(settingsDlg)
-        self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame_2.setObjectName("frame_2")
-        self.gridLayout = QtWidgets.QGridLayout(self.frame_2)
-        self.gridLayout.setObjectName("gridLayout")
-        self.label = QtWidgets.QLabel(self.frame_2)
-        font = QtGui.QFont()
+        self.verticalLayout = QVBoxLayout(settingsDlg)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.frame_2 = QFrame(settingsDlg)
+        self.frame_2.setObjectName(u"frame_2")
+        self.frame_2.setFrameShape(QFrame.StyledPanel)
+        self.frame_2.setFrameShadow(QFrame.Raised)
+        self.gridLayout = QGridLayout(self.frame_2)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.label = QLabel(self.frame_2)
+        self.label.setObjectName(u"label")
+        font = QFont()
         font.setBold(True)
-        font.setWeight(75)
         self.label.setFont(font)
-        self.label.setObjectName("label")
+
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.label_4 = QtWidgets.QLabel(self.frame_2)
-        self.label_4.setObjectName("label_4")
+
+        self.label_4 = QLabel(self.frame_2)
+        self.label_4.setObjectName(u"label_4")
+
         self.gridLayout.addWidget(self.label_4, 1, 0, 1, 1)
-        self.dbName = QtWidgets.QLineEdit(self.frame_2)
-        self.dbName.setObjectName("dbName")
+
+        self.dbName = QLineEdit(self.frame_2)
+        self.dbName.setObjectName(u"dbName")
+
         self.gridLayout.addWidget(self.dbName, 1, 1, 1, 1)
-        self.label_3 = QtWidgets.QLabel(self.frame_2)
-        self.label_3.setObjectName("label_3")
+
+        self.label_3 = QLabel(self.frame_2)
+        self.label_3.setObjectName(u"label_3")
+
         self.gridLayout.addWidget(self.label_3, 2, 0, 1, 1)
-        self.dbUser = QtWidgets.QLineEdit(self.frame_2)
-        self.dbUser.setObjectName("dbUser")
+
+        self.dbUser = QLineEdit(self.frame_2)
+        self.dbUser.setObjectName(u"dbUser")
+
         self.gridLayout.addWidget(self.dbUser, 2, 1, 1, 1)
-        self.label_2 = QtWidgets.QLabel(self.frame_2)
-        self.label_2.setObjectName("label_2")
+
+        self.label_2 = QLabel(self.frame_2)
+        self.label_2.setObjectName(u"label_2")
+
         self.gridLayout.addWidget(self.label_2, 3, 0, 1, 1)
-        self.dbPassword = QtWidgets.QLineEdit(self.frame_2)
-        self.dbPassword.setObjectName("dbPassword")
+
+        self.dbPassword = QLineEdit(self.frame_2)
+        self.dbPassword.setObjectName(u"dbPassword")
+
         self.gridLayout.addWidget(self.dbPassword, 3, 1, 1, 1)
-        self.label_6 = QtWidgets.QLabel(self.frame_2)
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
+
+        self.label_6 = QLabel(self.frame_2)
+        self.label_6.setObjectName(u"label_6")
         self.label_6.setFont(font)
-        self.label_6.setObjectName("label_6")
+
         self.gridLayout.addWidget(self.label_6, 4, 0, 1, 1)
-        self.label_5 = QtWidgets.QLabel(self.frame_2)
-        self.label_5.setObjectName("label_5")
+
+        self.label_5 = QLabel(self.frame_2)
+        self.label_5.setObjectName(u"label_5")
+
         self.gridLayout.addWidget(self.label_5, 5, 0, 1, 1)
-        self.magCheck = QtWidgets.QCheckBox(self.frame_2)
-        self.magCheck.setLayoutDirection(QtCore.Qt.RightToLeft)
-        self.magCheck.setText("")
-        self.magCheck.setObjectName("magCheck")
+
+        self.magCheck = QCheckBox(self.frame_2)
+        self.magCheck.setObjectName(u"magCheck")
+        self.magCheck.setLayoutDirection(Qt.RightToLeft)
+
         self.gridLayout.addWidget(self.magCheck, 5, 1, 1, 1)
-        self.label_8 = QtWidgets.QLabel(self.frame_2)
-        self.label_8.setObjectName("label_8")
+
+        self.label_8 = QLabel(self.frame_2)
+        self.label_8.setObjectName(u"label_8")
+
         self.gridLayout.addWidget(self.label_8, 7, 0, 1, 1)
-        self.tailCheck = QtWidgets.QCheckBox(self.frame_2)
-        self.tailCheck.setLayoutDirection(QtCore.Qt.RightToLeft)
-        self.tailCheck.setText("")
-        self.tailCheck.setObjectName("tailCheck")
+
+        self.tailCheck = QCheckBox(self.frame_2)
+        self.tailCheck.setObjectName(u"tailCheck")
+        self.tailCheck.setLayoutDirection(Qt.RightToLeft)
+
         self.gridLayout.addWidget(self.tailCheck, 7, 1, 1, 1)
-        self.label_7 = QtWidgets.QLabel(self.frame_2)
-        self.label_7.setObjectName("label_7")
+
+        self.label_7 = QLabel(self.frame_2)
+        self.label_7.setObjectName(u"label_7")
+
         self.gridLayout.addWidget(self.label_7, 6, 0, 1, 1)
-        self.closeupWinSize = QtWidgets.QLineEdit(self.frame_2)
-        self.closeupWinSize.setObjectName("closeupWinSize")
+
+        self.closeupWinSize = QLineEdit(self.frame_2)
+        self.closeupWinSize.setObjectName(u"closeupWinSize")
+
         self.gridLayout.addWidget(self.closeupWinSize, 6, 1, 1, 1)
-        self.label_9 = QtWidgets.QLabel(self.frame_2)
-        self.label_9.setObjectName("label_9")
+
+        self.label_9 = QLabel(self.frame_2)
+        self.label_9.setObjectName(u"label_9")
+
         self.gridLayout.addWidget(self.label_9, 8, 0, 1, 1)
-        self.tailLength = QtWidgets.QLineEdit(self.frame_2)
-        self.tailLength.setObjectName("tailLength")
+
+        self.tailLength = QLineEdit(self.frame_2)
+        self.tailLength.setObjectName(u"tailLength")
+
         self.gridLayout.addWidget(self.tailLength, 8, 1, 1, 1)
+
+
         self.verticalLayout.addWidget(self.frame_2)
-        self.frame = QtWidgets.QFrame(settingsDlg)
-        self.frame.setMaximumSize(QtCore.QSize(16777215, 50))
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.cancelBtn = QtWidgets.QPushButton(self.frame)
-        self.cancelBtn.setObjectName("cancelBtn")
+
+        self.frame = QFrame(settingsDlg)
+        self.frame.setObjectName(u"frame")
+        self.frame.setMaximumSize(QSize(16777215, 50))
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.cancelBtn = QPushButton(self.frame)
+        self.cancelBtn.setObjectName(u"cancelBtn")
+
         self.horizontalLayout.addWidget(self.cancelBtn)
-        self.okBtn = QtWidgets.QPushButton(self.frame)
-        self.okBtn.setObjectName("okBtn")
+
+        self.okBtn = QPushButton(self.frame)
+        self.okBtn.setObjectName(u"okBtn")
+
         self.horizontalLayout.addWidget(self.okBtn)
+
+
         self.verticalLayout.addWidget(self.frame)
 
+
         self.retranslateUi(settingsDlg)
-        QtCore.QMetaObject.connectSlotsByName(settingsDlg)
+
+        QMetaObject.connectSlotsByName(settingsDlg)
+    # setupUi
 
     def retranslateUi(self, settingsDlg):
-        _translate = QtCore.QCoreApplication.translate
-        settingsDlg.setWindowTitle(_translate("settingsDlg", "Dialog"))
-        self.label.setText(_translate("settingsDlg", "Database Connectivity"))
-        self.label_4.setText(_translate("settingsDlg", "Name"))
-        self.label_3.setText(_translate("settingsDlg", "User ID"))
-        self.label_2.setText(_translate("settingsDlg", "password"))
-        self.label_6.setText(_translate("settingsDlg", "Other Settings"))
-        self.label_5.setText(_translate("settingsDlg", "Show magnification window?"))
-        self.label_8.setText(_translate("settingsDlg", "Show measureLine tails?"))
-        self.label_7.setText(_translate("settingsDlg", "magnification window pixels"))
-        self.label_9.setText(_translate("settingsDlg", "Tail length"))
-        self.cancelBtn.setText(_translate("settingsDlg", "cancel"))
-        self.okBtn.setText(_translate("settingsDlg", "save"))
+        settingsDlg.setWindowTitle(QCoreApplication.translate("settingsDlg", u"Dialog", None))
+        self.label.setText(QCoreApplication.translate("settingsDlg", u"Database Connectivity", None))
+        self.label_4.setText(QCoreApplication.translate("settingsDlg", u"Name", None))
+        self.label_3.setText(QCoreApplication.translate("settingsDlg", u"User ID", None))
+        self.label_2.setText(QCoreApplication.translate("settingsDlg", u"password", None))
+        self.label_6.setText(QCoreApplication.translate("settingsDlg", u"Other Settings", None))
+        self.label_5.setText(QCoreApplication.translate("settingsDlg", u"Show magnification window?", None))
+        self.magCheck.setText("")
+        self.label_8.setText(QCoreApplication.translate("settingsDlg", u"Show measureLine tails?", None))
+        self.tailCheck.setText("")
+        self.label_7.setText(QCoreApplication.translate("settingsDlg", u"magnification window pixels", None))
+        self.label_9.setText(QCoreApplication.translate("settingsDlg", u"Tail length", None))
+        self.cancelBtn.setText(QCoreApplication.translate("settingsDlg", u"cancel", None))
+        self.okBtn.setText(QCoreApplication.translate("settingsDlg", u"save", None))
+    # retranslateUi
+

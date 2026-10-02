@@ -5,9 +5,9 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from .QIVMarkerText import QIVMarkerText
 
 class QIVMarker(QGraphicsItemGroup):
@@ -104,13 +104,15 @@ class QIVMarker(QGraphicsItemGroup):
             self.markItem.setBrush(markBrush)
 
         #  disable transforms for the marker and set the movable and selectable flags
-        self.markItem.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        self.markItem.setFlag(QGraphicsItem.ItemIsSelectable, False)
-        self.markItem.setFlag(QGraphicsItem.ItemIsMovable, False)
+        self.markItem.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        self.markItem.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        self.markItem.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+        self.markItem.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+
 
         #  now set these properties for the itemgroup
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selectable)
-        self.setFlag(QGraphicsItem.ItemIsMovable, movable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, selectable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, movable)
 
         #  add the mark to our group
         self.addToGroup(self.markItem)
@@ -412,11 +414,11 @@ class QIVMarker(QGraphicsItemGroup):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
 
         return pen
 
@@ -439,13 +441,13 @@ class QIVMarker(QGraphicsItemGroup):
         #  set the brush for filling the polygon
         if (color):
             #  check if we've been given a QColor object to use as fill
-            if (fill.__class__.__name__.lower() == 'qcolor'):
+            if (color.__class__.__name__.lower() == 'qcolor'):
                 #  we have a QColor object
                 self.markItem.setBrush(QBrush(color))
             else:
                 #  must be a list - if alpha isn't explicitly supplied, use the outline value
                 if (len(color) == 3):
-                    fill.append(self.alpha)
+                    color.append(self.alpha)
                 brush = QBrush(QColor(color[0], color[1], color[2], color[3]))
                 self.markItem.setBrush(brush)
         else:

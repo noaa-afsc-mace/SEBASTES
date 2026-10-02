@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_NewProjectDlg
 
 class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
@@ -47,7 +47,7 @@ class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
         else:
             QMessageBox.warning(self, "ERROR", 'Something is wrong: '+query.lastError().text())
         
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
@@ -59,7 +59,7 @@ class NewProjectDlg(QDialog, ui_NewProjectDlg.Ui_newProjectDlg):
         else:
             return
             
-    @pyqtSlot()        
+    @Slot()        
     def exit(self):
         self.accept()
         

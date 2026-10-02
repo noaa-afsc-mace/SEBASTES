@@ -5,9 +5,9 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from .QIVPolygonItem import QIVPolygonItem
 from .QIVMarkerText import QIVMarkerText
 
@@ -46,7 +46,8 @@ class QIVPolygon(QGraphicsItemGroup):
     def __init__(self, vertices,  color=[220,10,10], thickness=1.0,
                  alpha=255, linestyle='=', fill=None, selectable=True,
                  movable=False, selectThickness=4.0, selectColor=None,
-                 closed=True, view=None, parent=None, name='QIVPolygon'):
+                 closed=True, view=None, parent=None, name='QIVPolygon',
+                 isCosmetic=False):
         super(QIVPolygon, self).__init__(parent)
 
         self.name = name
@@ -60,14 +61,14 @@ class QIVPolygon(QGraphicsItemGroup):
         self.polygon = QIVPolygonItem(vertices,  color=color, thickness=thickness,
                  alpha=alpha, linestyle=linestyle, fill=fill, selectable=False,
                  selectThickness=selectThickness, selectColor=selectColor,
-                 movable=False, closed=closed, parent=self)
+                 movable=False, closed=closed, parent=self, isCosmetic=isCosmetic)
 
         #  and add it to our item group
         self.addToGroup(self.polygon)
 
         #  now set selectable/movable flags for the itemgroup
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selectable)
-        self.setFlag(QGraphicsItem.ItemIsMovable, movable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, selectable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, movable)
 
 
     def getLabelsFromName(self, labelName):

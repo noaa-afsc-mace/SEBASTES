@@ -1,13 +1,40 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 27 12:07:55 2014
+# coding=utf-8
 
-@author: rick.towler
-"""
+#     National Oceanic and Atmospheric Administration (NOAA)
+#     Alaskan Fisheries Science Center (AFSC)
+#     Resource Assessment and Conservation Engineering (RACE)
+#     Midwater Assessment and Conservation Engineering (MACE)
 
+#  THIS SOFTWARE AND ITS DOCUMENTATION ARE CONSIDERED TO BE IN THE PUBLIC DOMAIN
+#  AND THUS ARE AVAILABLE FOR UNRESTRICTED PUBLIC USE. THEY ARE FURNISHED "AS
+#  IS."  THE AUTHORS, THE UNITED STATES GOVERNMENT, ITS INSTRUMENTALITIES,
+#  OFFICERS, EMPLOYEES, AND AGENTS MAKE NO WARRANTY, EXPRESS OR IMPLIED,
+#  AS TO THE USEFULNESS OF THE SOFTWARE AND DOCUMENTATION FOR ANY PURPOSE.
+#  THEY ASSUME NO RESPONSIBILITY (1) FOR THE USE OF THE SOFTWARE AND
+#  DOCUMENTATION; OR (2) TO PROVIDE TECHNICAL SUPPORT TO USERS.
+
+"""
+.. module:: dbConnection
+
+    :synopsis: dbConnection provides a more Pythonic interface
+               for QSqlQuery and wraps in some other code that
+               was common to many of MACE's applications.
+
+
+| Developed by:  Rick Towler   <rick.towler@noaa.gov>
+|                Kresimir Williams   <kresimir.williams@noaa.gov>
+| National Oceanic and Atmospheric Administration (NOAA)
+| National Marine Fisheries Service (NMFS)
+| Alaska Fisheries Science Center (AFSC)
+| Midwater Assesment and Conservation Engineering Group (MACE)
+|
+| Author:
+|       Rick Towler   <rick.towler@noaa.gov>
+| Maintained by:
+|       Rick Towler   <rick.towler@noaa.gov>
+"""
 import logging
-from PyQt5 import QtCore
-from PyQt5 import QtSql
+from PySide6 import QtSql
 
 
 class SQLError(Exception):
@@ -108,71 +135,53 @@ class dbQueryResults:
             self.dateFormat = 'MM/dd/yyyy hh:mm:ss'
 
 
+    def convert(self, i):
+
+        if (self.query.isNull(i)):
+            val = None
+        #  handle DateTime conversion explicitly
+        elif (self.columnTypes[i] == 'QDateTime'):
+            val = self.query.value(i).toString(self.dateFormat)
+        #  deal with PyQt4/PyQt5 differences in returning integer values as "floats"
+        elif (self.columnTypes[i] in ['float','double']):
+            if (self.query.value(i).is_integer()):
+                val = str(int(self.query.value(i)))
+            else:
+                val = str(self.query.value(i))
+        else:
+                #  try a direct conversion to python string
+                val = str(self.query.value(i))
+
+        return val
+
     def __iter__(self):
         return self
 
     def __next__(self):
 
         if self.query.next():
-            #  build the list of items to return
-            for i in range(self.nColumns):
-                #  NULL values are returned as None
-                if (self.query.isNull(i)):
-                    val = None
-                #  handle DateTime conversion explicitly
-#                elif (self.columnTypes[i] == 'DateTime'):
-#                    val = self.query.value(i).toString(self.dateFormat)
-                #  deal with PyQt4/PyQt5 differences in returning integer values as "floats"
-#                elif (self.columnTypes[i] == 'Double'):
-#                    if (isinstance(self.query.value(i), int)):
-#                        val = str(int(self.query.value(i)))
-#                    else:
-#                    val = str(self.query.value(i))
-                else:
-                        #  try a direct conversion to python string
-                    val = str(self.query.value(i))
-                self.rowList[i] = val
-
+            #  build a new list of items for this row
+            self.rowList = [self.convert(i) for i in range(self.nColumns)]
             return self.rowList
         else:
-            self.rowList = [None] * self.nColumns
             raise StopIteration
 
     def first(self):
 
         if self.query.first():
             #  build the list of items to return
-            for i in range(self.nColumns):
-                #  NULL values are returned as None
-                if (self.query.isNull(i)):
-                    val = None
-                #  handle DateTime conversion explicitly
-#                elif (self.columnTypes[i] == 'DateTime'):
-#                    val = self.query.value(i).toString(self.dateFormat)
-                else:
-                    val = str(self.query.value(i))
-                self.rowList[i] = val
+            self.rowList = [self.convert(i) for i in range(self.nColumns)]
         else:
             #  nothing to return as the query is empty
             self.rowList = [None] * self.nColumns
 
         return self.rowList
 
-
     def last(self):
 
         if self.query.last():
             #  build the list of items to return
-            for i in range(self.nColumns):
-                #  NULL values are returned as None
-                if (self.query.isNull(i)):
-                    val = None
-#                #  handle DateTime conversion explicitly
-#                elif (self.columnTypes[i] == 'DateTime'):
-#                    val = self.query.value(i).toString(self.dateFormat)
-                else:
-                    val = str(self.query.value(i))
-                self.rowList[i] = val
+            self.rowList = [self.convert(i) for i in range(self.nColumns)]
         else:
             #  nothing to return as the query is empty
             self.rowList = [None] * self.nColumns
@@ -202,14 +211,54 @@ class dbConnection:
                  databases you need to set the isOracle keyword to 'False'
     '''
 
-    def __init__(self, source, username, password, label='db', driver='QODBC3',
-            isOracle=True):
+    def __init__(self, source, username, password, label='db', driver='QODBC',
+            isOracle=True, hostname=None, port=5432, serviceName=None, OracleHome=None,
+            ODBCOptions=["SQL_ATTR_ODBC_VERSION=SQL_OV_ODBC3", "SQL_ATTR_PACKET_SIZE=127"],
+            OracleODBCFetchBufferSize=33554432):
+        '''
+    
+            source (str): The source argument differs depending on the driver you are using.
 
+                QODBC: For non-Oracle ODBC connections, this is the ODBC Data Source Name (DSN).
+
+                       For Oracle ODBC connections, this is the TNS Name from your tnsnames.ora
+                       file that describes your connection. For Oracle connections, you can set
+                       this to None, and then set the hostname, port, and serviceName arguments
+                       to connect without using a tnsnames.ora file.
+
+            username (str): Set this to the username you are using to log into your database
+            password (str): Set this to the password for your user
+
+            hostname (str): Optional. Set this to the database server hostname. This argument is
+                    required if source is None.
+            port (int): Set this to an integer specifying the database server port to connect to.
+            serviceName (str): Optional. Required for Oracle ODBC connection if source is None.
+
+        '''
+
+        self.label = label
+        self.lastError = ''
+        self.qtDateFormatString = None
+        self.loggingEnabled = False
+        self.logger = None
+        self.handler = None
+        self.hasTransactions = False
+        self.preparedQuery = None
+
+        #  Postgres handles ForwardOnly queries differently than other drivers
+        #  so we change the default behavior of dbConnection to *not* set
+        #  forwardOnly when connecting to a Postgres database
+        self.isPostgres = False
 
         #  force isOracle keyword for drivers that are obviously *not* oracle
-        if (driver not in ['QODBC3', 'QODBC', 'QOCI']):
+        if (driver.lower() not in ['qodbc', 'qoci']):
             #  this is for sure not an oracle driver
             isOracle=False
+
+            if driver.lower() == 'qpsql':
+                #  Postgres doesn't handle ForwardOnly queries like other drivers
+                #  so we will disable forward only by default when using the QPSQL driver.
+                self.isPostgres = True
 
         #  create an instance of QSqlDatabase - if None is passed as the label
         #  we'll create the Qt "default" connection.
@@ -217,11 +266,73 @@ class dbConnection:
             self.db = QtSql.QSqlDatabase.addDatabase(driver)
         else:
             self.db = QtSql.QSqlDatabase.addDatabase(driver, label)
-        self.db.setDatabaseName(source)
-        self.db.setUserName(username)
-        self.db.setPassword(password)
-        self.label = label
-        self.lastError = ''
+
+        #  configure the QSqlDatabase connection. Changes in Qt 6.9.x require Oracle ODBC
+        #  connections to use a full connection string, instead of simply passing an ODBC
+        #  DSN and then setting the username and password. Since this approach should be
+        #  backwards compatible with previous versions of Qt, we'll switch to using it for
+        #  all Oracle ODBC connections.
+        #
+        #    NOTE! With this approach, the source is the TNS Name, NOT the ODBC DSN name
+        #
+        if isOracle and driver.lower() == 'qodbc':
+            connectionOptions = []
+
+            #  For Oracle ODBC connections, we have to construct a connection string.
+            #  First, extract the Oracle home name from the registry if needed
+            if OracleHome is None:
+                #  Try to get a list of Oracle driver installations (aka Oracle Home)
+                #OracleHome = _get_oracle_homes()
+                OracleHome = get_oracle_odbc_driver_name()
+
+                if OracleHome is None:
+                    raise ValueError("Unable to find an entry for the Oracle ODBC driver. " +
+                            "Has this been installed?")
+                            
+            #  set the driver entry
+            connectionOptions.append("Driver={" + OracleHome + "}")
+
+            #  Now determine if we're using a TNS name, or hostname:port/servicename
+            if source is None:
+                #  TNS name not provided, try to use hostname:port/servicename
+                if hostname is None or serviceName is None:
+                    raise ValueError("When not providing a TNS source name, you must pass the " +
+                            "hostname, port and serviceName used to connect to your database.")
+
+                #  pass the full hostname:port/servicename as the "DB Questionnaire" entry
+                connectionOptions.append("DBQ=" + hostname + ":" + port + "/" + serviceName)
+            else:
+                #  pass the TNS name as the "DB Questionnaire" entry
+                connectionOptions.append("DBQ=" + source)
+
+            #  add the username and password
+            connectionOptions.append("UID=" + username)
+            connectionOptions.append("PWD=" + password)
+
+            #  add the fetch buffer size - don't allow a FBS smaller than 16k
+            if OracleODBCFetchBufferSize > 16384:
+                connectionOptions.append("FBS=" + str(OracleODBCFetchBufferSize))
+
+            #  assemble the connection string
+            connectString = ';'.join(connectionOptions) + ";"
+
+            #  finally, set the connection string in the database object
+            self.db.setDatabaseName(connectString)
+
+            #  Now apply our ODBC options
+            for option in ODBCOptions:
+                self.db.setConnectOptions(option)
+
+        else:
+            #  non-Oracle connections can be configured as they have always been, using
+            #  the appropriate methods to set the source, username, password, etc.
+            self.db.setDatabaseName(source)
+            self.db.setUserName(username)
+            self.db.setPassword(password)
+            if hostname:
+                self.db.setHostName(hostname)
+                self.db.setPort(port)
+
         if (isOracle):
             #  set the default Oracle date and timestamp formats
             self.NLS_DATE_FORMAT = 'MM/DD/YYYY HH24:MI:SS'
@@ -230,13 +341,7 @@ class dbConnection:
             #  non-Oracle databases do not support this NLS business
             self.NLS_DATE_FORMAT = None
             self.NLS_TIMESTAMP_FORMAT = None
-        self.qtDateFormatString = None
-        self.loggingEnabled = False
-        self.logger = None
-        self.handler = None
-        self.hasTransactions = False
-        self.preparedQuery = None
-
+        
 
     def startTransaction(self):
         '''
@@ -307,7 +412,7 @@ class dbConnection:
         if self.db.isOpen():
             #  set the date and time formats for our connections
             sql = "alter session set NLS_DATE_FORMAT = '" + self.NLS_DATE_FORMAT + "'"
-            query = self.db.exec_(sql)
+            query = self.db.exec(sql)
             error = query.lastError().isValid()
             if (error):
                 #  there was a problem setting the date format - raise an error message
@@ -337,7 +442,7 @@ class dbConnection:
 
         if self.db.isOpen():
             sql="alter session set NLS_TIMESTAMP_FORMAT='" + self.NLS_TIMESTAMP_FORMAT + "'"
-            query = self.db.exec_(sql)
+            query = self.db.exec(sql)
             error = query.lastError().isValid()
             if (error):
                 #  there was a problem setting the timestamp format - raise an error message
@@ -356,9 +461,8 @@ class dbConnection:
         '''
         self.logger = logging.getLogger(self.label)
         self.logger.setLevel(logging.INFO)
-
-        self.handler = logging.handlers.FileHandler(logfile)
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        self.handler = logging.FileHandler(logfile)
+        formatter = logging.Formatter('%(asctime)s ::: %(message)s')
         self.handler.setFormatter(formatter)
 
         self.logger.addHandler(self.handler)
@@ -447,7 +551,7 @@ class dbConnection:
             return
 
         #  get the bind value names
-        bindNames = data.keys()
+        bindNames = list(data.keys())
 
         #  bind the data
         for name in bindNames:
@@ -460,13 +564,12 @@ class dbConnection:
             ok = preparedQuery.execBatch()
         else:
             #  we were only passed one record's worth of data
-            ok = preparedQuery.exec_()
+            ok = preparedQuery.exec()
 
         #  check if we had a problem
         if (not ok):
             #  ooops, there was a problem - report the error
-            query  = preparedQuery.lastQuery()
-            raise SQLError(query)
+            raise SQLError(preparedQuery)
 
 
     def dbOpen(self):
@@ -489,7 +592,7 @@ class dbConnection:
             self.setOracleTimestampFormat()
 
         #  check if the driver supports transactions.
-        self.hasTransactions = self.db.driver().hasFeature(QtSql.QSqlDriver.Transactions)
+        self.hasTransactions = self.db.driver().hasFeature(QtSql.QSqlDriver.DriverFeature.Transactions)
 
 
     def dbClose(self):
@@ -499,7 +602,7 @@ class dbConnection:
             self.lastError = ''
 
 
-    def dbQuery(self, sql, forwardOnly=True, asDict=False):
+    def dbQuery(self, sql, asDict=False, **kwargs):
         '''
         dbQuery executes the provided SQL statement and returns either a
         dbQueryResults object that can be used to iterate through the result
@@ -515,23 +618,32 @@ class dbConnection:
             PostgreSQL: While navigating the query results in forward-only mode,
             do not execute any other SQL command on the same database connection.
             This will cause the query results to be lost.
-            
+
             Calling dbQueryResults.first() multiple times for the same query will
             result in an error when forwardOnly=True. Good coding practices can
             eliminate the need of calling dbQueryResults.first() multiple times so
             this isn't an excuse for setting forwardOnly=False.
-            
+
         By default, this method returns a dbQueryResults instance which you can
-        use to iterate through the results. Set the asDict keyword to True to 
+        use to iterate through the results. Set the asDict keyword to True to
         return a dictionary, keyed by query column names that contains the full
         results of the query. This results in the entire query data set being
         read into RAM and may cause issues with very large data sets. Use your
         brain.
         '''
 
-        #  if returning a dict of results force forwardOnly for efficiency
-        if (asDict):
-            forwardOnly=True
+        #  handle the forwardOnly keyword argument. Since, as stated above, Postgres
+        #  doesn't allow for nested queries when in ForwardOnly mode, we don't enable
+        #  forwardOnly mode by default for Postgres.
+        if 'forwardOnly' in kwargs:
+            #  forwardOnly was explicitly passed so use that value
+            forwardOnly = kwargs['forwardOnly']
+        else:
+            #  forwardOnly was not passed, set the default based on the driver
+            if self.isPostgres:
+                forwardOnly = False
+            else:
+                forwardOnly = True
 
         #  create the structures required for our dbSelectResults class
         columns = []
@@ -547,22 +659,22 @@ class dbConnection:
         if (not dbRecord.isEmpty()):
             for i in range(dbRecord.count()):
                 columns.append(str(dbRecord.fieldName(i)).lower())
-                types.append(self.__getQVariantType(dbRecord.field(i)))
+                types.append(dbRecord.field(i).metaType().name())
 
         if (asDict):
-            
+
             #  get an instance of dbQueryREsults
             dbq = dbQueryResults(query, columns, types,
                         dateFormatString=self.qtDateFormatString)
-            
+
             #  create the return dictionary with keys mapped to column names
             result = {k:[] for k in columns}
-            
+
             #  populate the dict with data returned from the query
             for vals in dbq:
                 for i in range(dbq.nColumns):
                     result[columns[i]].append(vals[i])
-            
+
             #  return the dict
             return result
 
@@ -573,13 +685,30 @@ class dbConnection:
                         dateFormatString=self.qtDateFormatString)
 
 
-    def dbExec(self, sql, forwardOnly=False):
+    def dbExec(self, sql, **kwargs):
         '''
         dbExec is a simple wrapper function that checks if your sql statement executed
         successfully and raises an error if it didn't.
 
+        This method is intended to be used for queries that do not return results. So
+        it is best used for INSERT, UPDATE, DELETE statements as well as calling
+        stored procedures or functions.
+
         it returns the qSqlQuery object used to execute the passed sql.
         '''
+
+        #  handle the forwardOnly keyword argument. Since, as stated above, Postgres
+        #  doesn't allow for nested queries when in ForwardOnly mode, we don't enable
+        #  forwardOnly mode by default for Postgres.
+        if 'forwardOnly' in kwargs:
+            #  forwardOnly was explicitly passed so use that value
+            forwardOnly = kwargs['forwardOnly']
+        else:
+            #  forwardOnly was not passed, set the default based on the driver
+            if self.isPostgres:
+                forwardOnly = False
+            else:
+                forwardOnly = True
 
         #  define a query object
         query = QtSql.QSqlQuery(self.db)
@@ -589,7 +718,7 @@ class dbConnection:
             query.setForwardOnly(True)
 
         #  execute the sql
-        ok = query.exec_(sql)
+        ok = query.exec(sql)
 
         #  check if we had a problem
         if (not ok):
@@ -605,41 +734,66 @@ class dbConnection:
         return query
 
 
-    def __getQVariantType(self, field):
-        '''
-        __getQVariantType is an internal method that determines the python type from
-        the database column type. These data are stored in the columnTypes property
-        of the dbQueryResults object returned from a query and can be used to cast
-        your data from string to the native type if desired.
-        '''
+def get_oracle_home_from_registry():
 
-        f= field.type()
-        if (f == QtCore.QVariant.Int):
-            t = 'Int'
-        elif (f == QtCore.QVariant.Double):
-            t = 'Double'
-        elif (f == QtCore.QVariant.LongLong):
-            t = 'LongLong'
-        elif (f == QtCore.QVariant.Char):
-            t = 'Char'
-        elif (f == QtCore.QVariant.Date):
-            t = 'Date'
-        elif (f == QtCore.QVariant.DateTime):
-            t = 'DateTime'
-        elif (f == QtCore.QVariant.String):
-            t = 'String'
-        elif (f == QtCore.QVariant.Time):
-            t = 'Time'
-        elif (f == QtCore.QVariant.UInt):
-            t = 'UInt'
-        elif (f == QtCore.QVariant.ULongLong):
-            t = 'ULongLong'
-        elif (f == QtCore.QVariant.List):
-            t = 'List'
-        elif (f == QtCore.QVariant.ByteArray):
-            t = 'ByteArray'
-        else:
-            t = 'Unknown'
+    import winreg
 
-        return t
+    # Check both the native registry and the 32-bit redirected registry
+    registry_flags = [winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY]
+    
+    for flag in registry_flags:
+        try:
+            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Oracle", 0, winreg.KEY_READ | flag)
+            index = 0
+            while True:
+                try:
+                    subkey_name = winreg.EnumKey(hkey, index)
+                    subkey = winreg.OpenKey(hkey, subkey_name)
+                    try:
+                        oracle_home, _ = winreg.QueryValueEx(subkey, "ORACLE_HOME")
+                        if oracle_home:
+                            return oracle_home
+                    except FileNotFoundError:
+                        pass
+                    index += 1
+                except OSError:
+                    break # No more subkeys
+        except FileNotFoundError:
+            continue
 
+    return None
+
+
+def get_oracle_odbc_driver_name():
+
+    import winreg
+
+    # Check both the native registry and the 32-bit redirected registry
+    registry_flags = [winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY]
+    
+    for flag in registry_flags:
+        try:
+            # Open the official Windows ODBC drivers registry location
+            path = r"SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers"
+            hkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | flag)
+                                                                                    
+            
+                                                              
+            index = 0
+            while True:
+                try:
+                    # Enumerate through the names of installed drivers
+                    driver_name, _, _ = winreg.EnumValue(hkey, index)
+                    
+                    # Look for strings starting with "Oracle in " o
+                    if "oracle in" in driver_name.lower() or driver_name.lower() == "oracle bdb":
+                        return driver_name
+
+                    index += 1
+                except OSError:
+                                                
+                    break
+        except FileNotFoundError:
+            continue
+            
+    return None

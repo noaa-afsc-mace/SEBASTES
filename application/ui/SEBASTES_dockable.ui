@@ -1863,46 +1863,14 @@ frame</string>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="measureScBtn">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
+        <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>Measure Scene</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
+          <string>Measurement type</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="rangeBtn">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Range Point</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-        </widget>
+        <widget class="QComboBox" name="measurementBox"/>
        </item>
        <item>
         <widget class="QPushButton" name="linkBtn">

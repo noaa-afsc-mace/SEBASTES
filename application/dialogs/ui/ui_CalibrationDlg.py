@@ -1,83 +1,127 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\CalibrationDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'CalibrationDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QFrame,
+    QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QSizePolicy, QSpacerItem, QToolButton,
+    QWidget)
 
 class Ui_calibrationDlg(object):
     def setupUi(self, calibrationDlg):
-        calibrationDlg.setObjectName("calibrationDlg")
+        if not calibrationDlg.objectName():
+            calibrationDlg.setObjectName(u"calibrationDlg")
         calibrationDlg.resize(421, 213)
-        self.gridLayout = QtWidgets.QGridLayout(calibrationDlg)
-        self.gridLayout.setObjectName("gridLayout")
-        self.label = QtWidgets.QLabel(calibrationDlg)
-        self.label.setObjectName("label")
+        self.gridLayout = QGridLayout(calibrationDlg)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.label = QLabel(calibrationDlg)
+        self.label.setObjectName(u"label")
+
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.calIDBox = QtWidgets.QLineEdit(calibrationDlg)
-        self.calIDBox.setObjectName("calIDBox")
+
+        self.calIDBox = QLineEdit(calibrationDlg)
+        self.calIDBox.setObjectName(u"calIDBox")
+
         self.gridLayout.addWidget(self.calIDBox, 0, 1, 1, 1)
-        self.label_8 = QtWidgets.QLabel(calibrationDlg)
-        self.label_8.setObjectName("label_8")
+
+        self.label_8 = QLabel(calibrationDlg)
+        self.label_8.setObjectName(u"label_8")
+
         self.gridLayout.addWidget(self.label_8, 1, 0, 1, 1)
-        self.dateTimeBox = QtWidgets.QLineEdit(calibrationDlg)
-        self.dateTimeBox.setObjectName("dateTimeBox")
+
+        self.dateTimeBox = QLineEdit(calibrationDlg)
+        self.dateTimeBox.setObjectName(u"dateTimeBox")
+
         self.gridLayout.addWidget(self.dateTimeBox, 1, 1, 1, 1)
-        self.label_2 = QtWidgets.QLabel(calibrationDlg)
-        self.label_2.setObjectName("label_2")
+
+        self.label_2 = QLabel(calibrationDlg)
+        self.label_2.setObjectName(u"label_2")
+
         self.gridLayout.addWidget(self.label_2, 2, 0, 1, 1)
-        self.locationBox = QtWidgets.QLineEdit(calibrationDlg)
-        self.locationBox.setObjectName("locationBox")
+
+        self.locationBox = QLineEdit(calibrationDlg)
+        self.locationBox.setObjectName(u"locationBox")
+
         self.gridLayout.addWidget(self.locationBox, 2, 1, 1, 1)
-        self.label_3 = QtWidgets.QLabel(calibrationDlg)
-        self.label_3.setObjectName("label_3")
+
+        self.label_3 = QLabel(calibrationDlg)
+        self.label_3.setObjectName(u"label_3")
+
         self.gridLayout.addWidget(self.label_3, 3, 0, 1, 1)
-        self.methodBox = QtWidgets.QComboBox(calibrationDlg)
-        self.methodBox.setObjectName("methodBox")
+
+        self.methodBox = QComboBox(calibrationDlg)
+        self.methodBox.setObjectName(u"methodBox")
+
         self.gridLayout.addWidget(self.methodBox, 3, 1, 1, 1)
-        self.label_4 = QtWidgets.QLabel(calibrationDlg)
-        self.label_4.setObjectName("label_4")
+
+        self.label_4 = QLabel(calibrationDlg)
+        self.label_4.setObjectName(u"label_4")
+
         self.gridLayout.addWidget(self.label_4, 4, 0, 1, 1)
-        self.fileBox = QtWidgets.QLineEdit(calibrationDlg)
-        self.fileBox.setLayoutDirection(QtCore.Qt.LeftToRight)
-        self.fileBox.setObjectName("fileBox")
+
+        self.fileBox = QLineEdit(calibrationDlg)
+        self.fileBox.setObjectName(u"fileBox")
+        self.fileBox.setLayoutDirection(Qt.LeftToRight)
+
         self.gridLayout.addWidget(self.fileBox, 4, 1, 1, 1)
-        self.frame = QtWidgets.QFrame(calibrationDlg)
-        self.frame.setMinimumSize(QtCore.QSize(0, 40))
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.cancelBtn = QtWidgets.QPushButton(self.frame)
-        self.cancelBtn.setObjectName("cancelBtn")
+
+        self.frame = QFrame(calibrationDlg)
+        self.frame.setObjectName(u"frame")
+        self.frame.setMinimumSize(QSize(0, 40))
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.frame)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.cancelBtn = QPushButton(self.frame)
+        self.cancelBtn.setObjectName(u"cancelBtn")
+
         self.horizontalLayout.addWidget(self.cancelBtn)
-        self.okBtn = QtWidgets.QPushButton(self.frame)
-        self.okBtn.setObjectName("okBtn")
+
+        self.okBtn = QPushButton(self.frame)
+        self.okBtn.setObjectName(u"okBtn")
+
         self.horizontalLayout.addWidget(self.okBtn)
+
+
         self.gridLayout.addWidget(self.frame, 5, 0, 1, 3)
-        self.browseBtn = QtWidgets.QToolButton(calibrationDlg)
-        self.browseBtn.setObjectName("browseBtn")
+
+        self.browseBtn = QToolButton(calibrationDlg)
+        self.browseBtn.setObjectName(u"browseBtn")
+
         self.gridLayout.addWidget(self.browseBtn, 4, 2, 1, 1)
 
+
         self.retranslateUi(calibrationDlg)
-        QtCore.QMetaObject.connectSlotsByName(calibrationDlg)
+
+        QMetaObject.connectSlotsByName(calibrationDlg)
+    # setupUi
 
     def retranslateUi(self, calibrationDlg):
-        _translate = QtCore.QCoreApplication.translate
-        calibrationDlg.setWindowTitle(_translate("calibrationDlg", "Calibration"))
-        self.label.setText(_translate("calibrationDlg", "Calibration_ID"))
-        self.label_8.setText(_translate("calibrationDlg", "Date and Time"))
-        self.label_2.setText(_translate("calibrationDlg", "Location"))
-        self.label_3.setText(_translate("calibrationDlg", "Method"))
-        self.label_4.setText(_translate("calibrationDlg", "File location"))
-        self.cancelBtn.setText(_translate("calibrationDlg", "cancel"))
-        self.okBtn.setText(_translate("calibrationDlg", "OK"))
-        self.browseBtn.setText(_translate("calibrationDlg", "browse ..."))
+        calibrationDlg.setWindowTitle(QCoreApplication.translate("calibrationDlg", u"Calibration", None))
+        self.label.setText(QCoreApplication.translate("calibrationDlg", u"Calibration_ID", None))
+        self.label_8.setText(QCoreApplication.translate("calibrationDlg", u"Date and Time", None))
+        self.label_2.setText(QCoreApplication.translate("calibrationDlg", u"Location", None))
+        self.label_3.setText(QCoreApplication.translate("calibrationDlg", u"Method", None))
+        self.label_4.setText(QCoreApplication.translate("calibrationDlg", u"File location", None))
+        self.cancelBtn.setText(QCoreApplication.translate("calibrationDlg", u"cancel", None))
+        self.okBtn.setText(QCoreApplication.translate("calibrationDlg", u"OK", None))
+        self.browseBtn.setText(QCoreApplication.translate("calibrationDlg", u"browse ...", None))
+    # retranslateUi
+

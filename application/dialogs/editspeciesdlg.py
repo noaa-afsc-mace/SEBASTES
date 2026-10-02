@@ -1,13 +1,13 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_EditSpeciesDlg
 from datetime import datetime,  timezone
 
 
 class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
-    goToTargetEvent = pyqtSignal(int, int,  int)
+    goToTargetEvent = Signal(int, int,  int)
     
     def __init__(self, parent=None):
         super(EditSpeciesDlg, self).__init__(parent)
@@ -81,6 +81,7 @@ class EditSpeciesDlg(QDialog, ui_EditSpeciesDlg.Ui_editSpeciesDlg):
                 self.goToNextFish()
             else:
                 QMessageBox.warning(self, "ERROR", 'Select a "Change to" species.')
+                
     def changeAll(self):
         if self.toSpeciesBox.currentIndex()>=0 and self.fromSpeciesBox.currentIndex()>=0:
             reply=QMessageBox.warning(self, "WARNING", "Are you sure you want to change all "+self.fromSpeciesBox.currentText()+" to "+self.toSpeciesBox.currentText()+"?",  QMessageBox.Yes, QMessageBox.No)

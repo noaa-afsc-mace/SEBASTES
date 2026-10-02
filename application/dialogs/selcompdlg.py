@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from PyQt5 import QtSql
 from dialogs.ui import  ui_CompListDlg
 
@@ -23,12 +23,12 @@ class SelCompDlg(QDialog, ui_AssignActivesDlg.Ui_assignActivesDlg):
         self.activeView.show()
 
         self.inactiveSelModel=QItemSelectionModel(self.inactiveModel, self.inactiveView)
-        self.inactiveView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.inactiveView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.inactiveView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.inactiveView.setSelectionModel(self.inactiveSelModel)
         
         self.activeSelModel=QItemSelectionModel(self.activeModel, self.activeView)
-        self.activeView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.activeView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.activeView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.activeView.setSelectionModel(self.activeSelModel)
         

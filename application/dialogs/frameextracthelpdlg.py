@@ -1,8 +1,8 @@
 
 import sys,  traceback
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_FrameExtractHelpDlg
 
 class FrameExtractHelpDlg(QDialog, ui_FrameExtractHelpDlg.Ui_frameExtractHelpDlg):
@@ -12,7 +12,7 @@ class FrameExtractHelpDlg(QDialog, ui_FrameExtractHelpDlg.Ui_frameExtractHelpDlg
         self.okBtn.clicked.connect(self.exit)
         self.extractBtn.clicked.connect(self.extractFrameNum)
     
-    @pyqtSlot()
+    @Slot()
     def extractFrameNum(self):
         try:
             filename_string=self.filenameEdit.text()
@@ -28,6 +28,6 @@ class FrameExtractHelpDlg(QDialog, ui_FrameExtractHelpDlg.Ui_frameExtractHelpDlg
             print(txt)
             QMessageBox.warning(self, "ERROR", txt)
         
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         self.accept()

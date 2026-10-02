@@ -1,5 +1,12 @@
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+"""
+Rick Towler
+Midwater Assessment and Conservation Engineering
+NOAA Alaska Fisheries Science Center
+rick.towler@noaa.gov
+"""
+
+from PySide6.QtCore import *
+from PySide6.QtGui import *
 
 class QIVHudText(QObject):
     """
@@ -126,7 +133,7 @@ class QIVHudText(QObject):
         if (self.__backgroundBrush):
             painter.setBrush(self.__backgroundBrush)
             painter.drawRect(self.boundingRect())
-            painter.setBrush(Qt.NoBrush)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
 
         #  draw the text
         painter.setFont(self.__font)
@@ -138,7 +145,7 @@ class QIVHudText(QObject):
 
         #  get the font metrics and calculate text width and height
         fontMetrics = QFontMetrics(self.__font)
-        brWidth = fontMetrics.width(self.__text)
+        brWidth = fontMetrics.horizontalAdvance(self.__text)
         brHeight = fontMetrics.height() + 1
 
         if self.__normalized:
@@ -183,10 +190,10 @@ class QIVHudText(QObject):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
 
         return pen

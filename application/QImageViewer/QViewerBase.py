@@ -27,10 +27,10 @@ Public Properties
 
  defaultCursor - Set this to the cursor that will be active when the pointer
                  is in the widget. The widget will automatically change the
-                 cursor to Qt.ArrowCursor when the pointer moves out of the
+                 cursor to Qt.CursorShape.ArrowCursor when the pointer moves out of the
                  widget.
 
-                 Default = Qt.CrossCursor
+                 Default = Qt.CursorShape.CrossCursor
 
 
     zoomFactor - set this to the zoom factor applied to each mouse
@@ -69,7 +69,7 @@ Public Properties
                  requirements you can disable this feature and handle this in
                  your application.
 
-                 Default = Qt.Key_Alt (Alt key)
+                 Default = Qt.Key.Key_Alt (Alt key)
 
 
  rubberBandKey - Set this to the Qt Key Constant representing the keyboard key
@@ -84,14 +84,14 @@ Public Properties
                  and mouseReleaseEvent signals and calling startRubberBand and
                  endRubberBand yourself in your mouse event handlers.
 
-                 Default = Qt.Key_Shift (Shift key)
+                 Default = Qt.Key.Key_Shift (Shift key)
 
 
   selectAddKey - Set this to the Qt Key Constant representing the keyboard key
                  that will be used as the modifier to enable adding items to the current
                  set of selected items.
 
-                 Default = Qt.Key_Control  (Control key)
+                 Default = Qt.Key.Key_Control  (Control key)
 
 Public Methods
 
@@ -117,28 +117,31 @@ rick.towler@noaa.gov
 
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtOpenGL import *
+import qimage2ndarray
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtOpenGL import *
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from .QIVDimensionLine import QIVDimensionLine
 from .QIVMarkerText import QIVMarkerText
 from .QIVHudText import QIVHudText
 from .QIVMarker import QIVMarker
 from .QIVPolygon import QIVPolygon
 from .QIVPolygonItem import QIVPolygonItem
+from .QIVGrid import QIVGrid
 
 class QViewerBase(QGraphicsView):
 
     #  define PyQt Signals
-    mouseWheel = pyqtSignal(object, object)
-    mouseRelease = pyqtSignal(object, 'QPointF', int, object, list)
-    mousePress = pyqtSignal(object, 'QPointF', int, object, list)
-    mouseMove = pyqtSignal(object, 'QPointF', object, list, list)
-    rubberBand = pyqtSignal(object, 'QRect', list)
-    keyRelease = pyqtSignal(object, object)
-    keyPress = pyqtSignal(object, object)
-    imageData = pyqtSignal('QImage')
+    mouseWheel = Signal(object, object)
+    mouseRelease = Signal(object, 'QPointF', object, object, list)
+    mousePress = Signal(object, 'QPointF', object, object, list)
+    mouseMove = Signal(object, 'QPointF', object, list, list)
+    rubberBand = Signal(object, 'QRect', list)
+    keyRelease = Signal(object, object)
+    keyPress = Signal(object, object)
+    imageData = Signal('QImage')
 
     def __init__(self, parent=None, useGL=False, backgroundColor=[50,50,50]):
         super(QViewerBase, self).__init__(parent)
@@ -151,14 +154,14 @@ class QViewerBase(QGraphicsView):
         self.minZoom = -2
         self.maxZoom = 20
         self.name = 'QViewerBase'
-        self.defaultCursor = Qt.CrossCursor
+        self.defaultCursor = Qt.CursorShape.CrossCursor
         self.backgroundColor = QColor(50,50,50,255)
 
         #  define the default modifier keys
-        self.panKey = Qt.Key_Alt
-        self.rubberBandKey = Qt.Key_Shift
-        self.selectAddKey = Qt.Key_Escape
-        self.zoomKey = Qt.Key_Control
+        self.panKey = Qt.Key.Key_Alt
+        self.rubberBandKey = Qt.Key.Key_Shift
+        self.selectAddKey = Qt.Key.Key_Escape
+        self.zoomKey = Qt.Key.Key_Control
 
         #  define the default "private" properties
         self.leftBtnClicked = False
@@ -168,9 +171,9 @@ class QViewerBase(QGraphicsView):
         self.lastPanPoint = QPoint(0,0)
         self.lastClickPoint = QPoint(0,0)
         self.currentKbKey = None
-        self.isZooming = False
-        self.__zooming = False
         self.panning = False
+        self.isZooming = False
+        self.__zooming=False
         self.dimensionLine = None
         self.rubberBandLine = None
         self.rubberBanding = False
@@ -182,13 +185,14 @@ class QViewerBase(QGraphicsView):
         self.selectedItems = []
         self.hudItems = []
         self.sceneItems = []
+        self.stickyScale = (1.0,1.0)
 
         #  enable mouse tracking
         self.setMouseTracking(True)
 
         #  set the default rendering hints
-        self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
-                            QPainter.TextAntialiasing)
+        self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform |
+                            QPainter.RenderHint.TextAntialiasing)
 
         #  set up the OGL widget if enabled
         if useGL:
@@ -196,6 +200,32 @@ class QViewerBase(QGraphicsView):
 
         #  create the scene
         self.createScene()
+
+
+
+    def renderedWidth(self):
+        '''
+        renderedWidth returns the actual on-screen width of this widget. It is similar
+        to the width() method except that it returns the widget width after OS
+        monitor scaling has been applied. For example, if you have a widget that is
+        400 pixels wide on a screen with scaling set to 150%, the widget will be
+        rendered with a width of 600.
+        '''
+
+        return int(round(self.width() * self.window().screen().devicePixelRatio()))
+
+
+    def renderedHeight(self):
+        '''
+        renderedHeight returns the actual on-screen height of this widget. It is similar
+        to the height() method except that it returns the widget height after OS
+        monitor scaling has been applied. For example, if you have a widget that is
+        400 pixels high on a screen with scaling set to 150%, the widget will be
+        rendered with a height of 600.
+        '''
+
+        return int(round(self.height() * self.window().screen().devicePixelRatio()))
+
 
 
     def setName(self, name):
@@ -216,15 +246,20 @@ class QViewerBase(QGraphicsView):
         if (enable and not self.glEnabled ):
             #  enable an OGL viewport widget
             self.glEnabled = True
-            self.setViewport(QGLWidget(QGLFormat(QGL.SampleBuffers| QGL.DirectRendering), self))
-            self.setRenderHints(QPainter.HighQualityAntialiasing)
-            self.setViewportUpdateMode(QGraphicsView.SmartViewportUpdate)
+            gl_format = QSurfaceFormat()
+            gl_format.setSamples(4) 
+            gl_viewport = QOpenGLWidget(self)
+            gl_viewport.setFormat(gl_format)
+            self.setViewport(gl_viewport)
+            self.setRenderHints(QPainter.RenderHint.Antialiasing)
+            self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
             self.update()
-        elif (self.glEnabled  and not enable):
+        elif (self.glEnabled and not enable):
             #  enable a non OGL viewport widget
             self.setViewport(0)
-            self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
-                        QPainter.TextAntialiasing)
+            self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform |
+                        QPainter.RenderHint.TextAntialiasing)
+            self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.MinimalViewportUpdate)
             self.update()
             self.glEnabled = False
 
@@ -272,14 +307,101 @@ class QViewerBase(QGraphicsView):
 
     def saveImage(self, filename):
         """
+        saveImage is the same as saveView and is here for backwards compatibility.
+        """
+        self.saveView(filename)
+
+
+    def saveView(self, filename):
+        """
         save the rendered image to a file. You must provide the full path and
         file name. The image type will be inferred from the file extension. Typical
         values would be "jpg", "jpeg", or "png".
         """
 
-        pixmap = QPixmap()
-        pixmap.grabWidget(self)
+        pixmap = self.renderView()
         ok = pixmap.save(filename)
+        if not ok:
+            raise IOError('Unable to save image ' + filename)
+
+
+    def renderView(self, width=None, height=None, asNDarray=False):
+        '''
+        Render the full view to a pixmap or numpy array. The view is what you see
+        on the screen and includes base images, marks, lines, HUD, etc.
+        '''
+
+        #  if width/height is not provided render the view at the on-screen resolution
+        if width is None:
+            width = self.renderedWidth()
+        if height is None:
+            height = self.renderedHeight()
+
+        #  get the view as a pixmap
+        pixmap = self.grab()
+
+        #  scale the image if the on-screen resolution is != specified resolution
+        if pixmap.height() != height or pixmap.width() != width:
+            pixmap = pixmap.scaled(QSize(width,height), Qt.AspectRatioMode.IgnoreAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation)
+
+        if asNDarray:
+            image = pixmap.toImage()
+            return qimage2ndarray.byte_view(image)
+        else:
+            return pixmap
+
+
+    def renderScene(self, width=None, height=None, asNDarray=False):
+        """
+        Render scene to a QImage or numpy array. This renders the entire image, marks, and lines
+        regardless of the current view. The rendered image resolution will be defined by the
+        scene size but you can override that by passing a width and height.
+        """
+
+        if width is None:
+            width = self.scene.width()
+        if height is None:
+            height = self.scene.height()
+
+        #  create the empty image to render into and fill
+        image = QImage(width, height, QImage.Format.Format_ARGB32)
+        image.fill(0)
+
+        #  create the painter to render the image
+        painter = QPainter(image)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform |
+                            QPainter.RenderHint.TextAntialiasing)
+
+        #TODO: Need to figure out how to apply "sticky" scaling from the view.
+        #      Render to a hidden view that's the same size as the scene?
+
+        #  render it
+        self.scene.render(painter)
+
+        #  return data as the requested type
+        if asNDarray:
+            #  return as ND array
+            return qimage2ndarray.byte_view(image)
+        else:
+            #  return as QImage
+            return image
+
+
+    def saveScene(self, filename, width=None, height=None):
+        """
+        save the rendered scene to a file. This saves the entire image, marks, and lines
+        regardless of the current view. The saved image resolution will be defined by the
+        scene size but you can override that by passing a width and height. You must
+        provide the full path and file name. The image type will be inferred from the file
+        extension. Typical values would be "jpg", "jpeg", or "png".
+
+        """
+        #  call renderScene to get a QImage of the current scene
+        image = self.renderScene(width=width, height=height)
+
+        #  and save
+        ok = image.save(filename)
         if not ok:
             raise IOError('Unable to save image ' + filename)
 
@@ -457,7 +579,7 @@ class QViewerBase(QGraphicsView):
 
     def addText(self, position, text, size=10, font='helvetica', italics=False, weight=-1,
                 color=[0,0,0], alpha=255, halign='left', valign='top', name='QIVText',
-                selectable=False, movable=False):
+                selectable=False, movable=False,drawBackdrop=False, backdropColor=[0,0,0]):
         """
         Add text to the scene given the text and position. The function returns the reference
         to the QIVMarkerText object that is added to the scene.
@@ -494,7 +616,7 @@ class QViewerBase(QGraphicsView):
         #  create a QIVMarkerText based on the input options
         textItem = QIVMarkerText(position, text, size=size, font=font,
                 italics=italics, weight=weight, color=color, alpha=alpha, halign=halign,
-                valign=valign, name=name, view=self, selectable=selectable, movable=movable)
+                valign=valign, name=name, view=self, selectable=selectable, movable=movable,drawBackdrop=False, backdropColor=[0,0,0])
 
         #  add the text directly to the scene
         self.scene.addItem(textItem)
@@ -508,7 +630,7 @@ class QViewerBase(QGraphicsView):
     def addPolygon(self, verts, color=[220,0,0], thickness=1.0, alpha=255,
             linestyle='=', fill=None, selectable=True, movable=False,
             selectThickness=2.0, selectColor=None, closed=True,
-            name='QIVPolygon', noadd=False):
+            name='QIVPolygon', noadd=False, isCosmetic=False):
         """
         Add an arbitrary polygon to the scene. Polygons can be open and unfilled,
         closed and unfilled, or closed and filled.
@@ -551,7 +673,7 @@ class QViewerBase(QGraphicsView):
         #  create the polygon object
         polygon = QIVPolygon(verts, color=color, thickness=thickness,
                  alpha=alpha, linestyle=linestyle, fill=fill, selectable=selectable,
-                 movable=movable, closed=closed, view=self, name=name)
+                 movable=movable, closed=closed, view=self, name=name,isCosmetic=isCosmetic)
 
         if (not noadd):
             #  add the polygon to the scene
@@ -564,7 +686,7 @@ class QViewerBase(QGraphicsView):
 
 
     def addLine(self, verts, color=[220,0,0], thickness=1.0, alpha=255,
-            linestyle='=', selectable=True, movable=True):
+            linestyle='=', selectable=True, movable=True, isCosmetic=False):
         """
         Add an arbitrary line to the scene.
 
@@ -589,7 +711,38 @@ class QViewerBase(QGraphicsView):
         #  addLine is just a simplified interface to addPolygon
         return QViewerBase.addPolygon(self, verts, color=color, thickness=thickness, alpha=alpha,
                     linestyle=linestyle, selectable=selectable, movable=movable,
-                    closed=False)
+                    closed=False, isCosmetic=isCosmetic)
+
+
+    def addGrid(self, layer_verts, layer_labels, interval_verts, interval_labels,
+            color=[0,0,0], thickness=1.0, alpha=255, linestyle='=', isCosmetic=True):
+        """
+        Add an arbitrary line to the scene.
+
+          layer_verts (list)  - A list of [x,y] pairs or a list of QPointF objects
+                color (list)  - A 3 element list or tuple containing the RGB triplet
+                                specifying the color of the text.
+            thickness (float) - A float specifying the line thickness. Note that thickness
+                                is related to scale. The larger your scene is, the thicker
+                                your lines will need to be to be visible when zoomed out.
+                alpha (int)   - An integer specifying the opacity of the text. 0 is transparent
+                                and 255 is solid.
+            linestyle (string)- A character specifying the polygon outline style. "=" is a solid
+                                line, "-" is a dashed line, and "." is a dotted line.
+
+        """
+
+        gridItem = QIVGrid(layer_verts, layer_labels, interval_verts, interval_labels, color=color,
+                             thickness=thickness, alpha=alpha, view=self)
+
+        #  add the grid to the scene
+        self.scene.addItem(gridItem)
+
+        #  and add the grid to our internal list of items
+        self.sceneItems.append(gridItem)
+
+        return gridItem
+
 
 
     def addMark(self, position, style='+', color=[220,0,0], selectColor=[5,220,250],
@@ -672,22 +825,21 @@ class QViewerBase(QGraphicsView):
             else:
                 vScaleRatio = float(self.width() - 2) / float(self.scene.width())
                 hScaleRatio = float(self.height() - 2) / float(self.scene.height())
-
-            #  apply the scaling
-            if (verticalOnly):
-                #  vertical only
-                self.scale(hScaleRatio, hScaleRatio)
-            elif (horizontalOnly):
-                #  horizontal only
-                self.scale(vScaleRatio, vScaleRatio)
-            else:
-                #  scale to fit both vertical and horizontal extents
-                scaleFactor = min(vScaleRatio, hScaleRatio)
-                self.scale(scaleFactor, scaleFactor)
-
         except:
             #  the scene is empty, do nothing
-            pass
+            return
+
+        #  apply the scaling
+        if (verticalOnly):
+            #  vertical only
+            self.scale(hScaleRatio, hScaleRatio)
+        elif (horizontalOnly):
+            #  horizontal only
+            self.scale(vScaleRatio, vScaleRatio)
+        else:
+            #  scale to fit both vertical and horizontal extents
+            scaleFactor = min(vScaleRatio, hScaleRatio)
+            self.scale(scaleFactor, scaleFactor)
 
 
     def zoomToRegion(self, regionRect):
@@ -738,7 +890,6 @@ class QViewerBase(QGraphicsView):
         #  update the viewport
         self.viewport().update()
 
-
     def zoomToPoint(self, point, zoomLevel):
         """
         Zooms the view to a point on the image given a point and a zoom level (int).
@@ -758,7 +909,6 @@ class QViewerBase(QGraphicsView):
 
         #  set the zoom level
         zoomLevel = self.__getZoomScaler(zoomLevel)
-
         if (zoomLevel == 0):
             return
 
@@ -775,10 +925,18 @@ class QViewerBase(QGraphicsView):
         self.isZooming = False
 
 
-    def scale(self, x, y):
+    def scale(self, x, y, sticky=False):
+        """
+        scales the scene. Set sticky to True to set a scaling ratio that persists
+        between subsequent calls.
+        """
 
         self.isZooming = True
-        QGraphicsView.scale(self, x, y)
+        if sticky:
+            self.stickyScale = (x, y)
+            QGraphicsView.scale(self, x, y)
+        else:
+            QGraphicsView.scale(self, x * self.stickyScale[0], y * self.stickyScale[1])
         self.isZooming = False
 
 
@@ -834,7 +992,7 @@ class QViewerBase(QGraphicsView):
         """
         Change the cursor when the mouse enters the widget
         """
-        self.setFocus(Qt.MouseFocusReason)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.__pointerLeftWidget = False
         self.setCursor(self.defaultCursor)
         QGraphicsView.enterEvent(self, ev)
@@ -844,11 +1002,11 @@ class QViewerBase(QGraphicsView):
         """
         Change the cursor when the mouse leaves the widget
         """
-        if (QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier):
+        if (self.panning):
             #  don't immediately change pointer if we're panning
             self.__pointerLeftWidget = True
         else:
-            self.setCursor(Qt.ArrowCursor)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
             QGraphicsView.leaveEvent(self, ev)
             self.currentKbKey = None
 
@@ -863,10 +1021,10 @@ class QViewerBase(QGraphicsView):
         #  handle the built mouse events first
 
         #  panning...
-        if QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier and (ev.button() == Qt.LeftButton):
+        if self.panning and (ev.button() == Qt.MouseButton.LeftButton):
             #  we're done panning
             self.leftBtnClicked = False
-            self.setCursor(Qt.OpenHandCursor)
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
             self.lastPanPoint = QPoint()
 
         #  "auto" rubber banding...
@@ -942,7 +1100,7 @@ class QViewerBase(QGraphicsView):
         #  remove items that have their ItemIsSelectable flag unset
         nItems = len(items)
         for x in range(nItems):
-            if ((items[x].flags().__int__() & QGraphicsItem.ItemIsSelectable) == 0):
+            if (items[x].flags().value & QGraphicsItem.GraphicsItemFlag.ItemIsSelectable.value) == 0:
                 items[x] = None
 
         #  then remove all items that are None
@@ -962,14 +1120,14 @@ class QViewerBase(QGraphicsView):
         #  handle the built mouse events first
 
         #  panning...
-        if QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier and (ev.button() == Qt.LeftButton):
+        if self.panning and (ev.button() == Qt.MouseButton.LeftButton):
             #  we're panning
             self.leftBtnClicked = True
-            self.setCursor(Qt.ClosedHandCursor)
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self.lastPanPoint = ev.pos()
 
         #  rubber banding...
-        elif self.rubberBandKey and (self.currentKbKey == self.rubberBandKey) and (ev.button() == Qt.LeftButton):
+        elif self.rubberBandKey and (self.currentKbKey == self.rubberBandKey) and (ev.button() == Qt.MouseButton.LeftButton):
             #  start a rubber band selection box
             self.rubberBandObj = self.startRubberBand(clickLocation)
 
@@ -1052,7 +1210,7 @@ class QViewerBase(QGraphicsView):
                 self.rubberBandRect.setTopLeft(p2)
                 self.rubberBandRect.setBottomRight(self.rubberBandOrigin)
             self.rubberBandObj.setGeometry(self.rubberBandRect)
-            self.emitMouseMoveEvent(self.mapToScene(ev.pos()), self.currentKbKey, [], [])
+
 
         elif self.dimensionLine:
             #  update the dimension line
@@ -1067,9 +1225,8 @@ class QViewerBase(QGraphicsView):
 
             #  update the end-point
             self.dimensionLine.setP2(p2)
-            self.emitMouseMoveEvent(self.mapToScene(ev.pos()), self.currentKbKey, [], [])
-            
-        elif QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier:
+
+        elif self.panning:
             #  we're panning - track the movement and set the center point
             if not self.lastPanPoint.isNull():
                 #print("lastPan:"+str(self.mapToScene(self.lastPanPoint)) + "  thisPan:" +
@@ -1084,7 +1241,7 @@ class QViewerBase(QGraphicsView):
             draggedItems = []
             if (self.selectedItems):
                 #  check if we're holding the left mouse button down
-                if (ev.buttons() & Qt.LeftButton):
+                if (ev.buttons() & Qt.MouseButton.LeftButton):
                     #  calculate the mouse delta
 
                     p2 = QPoint()
@@ -1097,7 +1254,7 @@ class QViewerBase(QGraphicsView):
                     #  move the selected marks - but only marks that are movable
                     draggedItems = []
                     for item in self.selectedItems:
-                        if ((item.flags().__int__() & QGraphicsItem.ItemIsMovable) > 0):
+                        if (item.flags().value & QGraphicsItem.GraphicsItemFlag.ItemIsMovable.value) > 0:
                             item.moveBy(-delta.x(), -delta.y())
                             draggedItems.append(item)
 
@@ -1174,18 +1331,20 @@ class QViewerBase(QGraphicsView):
 
         self.currentKbKey = ev.key()
 
-        if (QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier):
+        if (ev.key() == self.panKey):
             #  enable Pan mode
-            self.panning=True
+            self.panning = True
+            #  set the cursor to the hand to indicate pan/zoom mode
             if self.leftBtnClicked:
-                self.setCursor(Qt.ClosedHandCursor)
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
             else:
-                self.setCursor(Qt.OpenHandCursor)
+                self.setCursor(Qt.CursorShape.OpenHandCursor)
         elif (ev.key() == self.selectAddKey):
             #  set the cursor to the arrow with "+"
-            self.setCursor(Qt.DragCopyCursor)
-        elif (QGuiApplication.queryKeyboardModifiers()==Qt.ControlModifier):
-            self.__zoooming=True
+            self.setCursor(Qt.CursorShape.DragCopyCursor)
+        elif (ev.key() == self.zoomKey):
+            #  enable zoom mode
+            self.__zooming = True
         else:
             self.keyPress.emit(self, ev)
 
@@ -1196,23 +1355,24 @@ class QViewerBase(QGraphicsView):
         """
         self.currentKbKey = None
 
-        if (self.panning):
-            self.panning=False
+        if (ev.key() == self.panKey):
             #  disable Pan/Zoom mode
+            self.panning = False
             if self.__pointerLeftWidget:
                 #  we've left the widget - reset the cursor to the standard arrow
-                self.setCursor(Qt.ArrowCursor)
+                self.setCursor(Qt.CursorShape.ArrowCursor)
             else:
                 self.setCursor(self.defaultCursor)
-        if (ev.key() == self.selectAddKey):
+        elif (ev.key() == self.selectAddKey):
             #  disable selection add mode
             if self.__pointerLeftWidget:
                 #  we've left the widget - reset the cursor to the standard arrow
-                self.setCursor(Qt.ArrowCursor)
+                self.setCursor(Qt.CursorShape.ArrowCursor)
             else:
                 self.setCursor(self.defaultCursor)
-        if (self.__zooming):
-            self.__zooming=False
+        elif  (ev.key() == self.zoomKey):
+            #  disable zoom mode
+            self.__zooming = False
         else:
             self.keyRelease.emit(self, ev)
 
@@ -1225,12 +1385,12 @@ class QViewerBase(QGraphicsView):
         """
 
         #  Check if we're in auto Zoom mode
-        if QGuiApplication.queryKeyboardModifiers()==Qt.ControlModifier:
+        if self.__zooming:
             #  we're zooming
             if (ev.angleDelta().y() > 0):
-                self.zoom(ev.pos(), 1)
+                self.zoom(ev.position(), 1)
             else:
-                self.zoom(ev.pos(), -1)
+                self.zoom(ev.position(), -1)
 
         else:
             #  not zooming - pass wheel event on
@@ -1271,6 +1431,8 @@ class QViewerBase(QGraphicsView):
         """
 
         #  get the point before the scale
+        if type(point) == QPointF:
+            point = point.toPoint()
         ptBeforeScale = self.mapToScene(point)
 
         #  set the zoom level
@@ -1297,7 +1459,7 @@ class QViewerBase(QGraphicsView):
         viewport.
         """
 
-        if not (QGuiApplication.queryKeyboardModifiers()==Qt.AltModifier or QGuiApplication.queryKeyboardModifiers()==Qt.ControlModifier or self.isSettingCtrPt):
+        if not (self.panning or self.__zooming or self.isSettingCtrPt):
             #  move the current center point if the user manually scrolls
             ptBeforeScale = self.mapToScene(self.centerPoint.toPoint())
             QGraphicsView.scrollContentsBy(self, x, y)
@@ -1437,11 +1599,11 @@ class QViewerBase(QGraphicsView):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenShape.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenShape.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenShape.SolidLine)
 
         return pen
 
@@ -1465,7 +1627,6 @@ class QViewerBase(QGraphicsView):
             else:
                 #  we're at maximum zoom
                 zoomLevel = 0
-            
         else:
             if (self.zoomLevel + zoomLevel >= self.minZoom):
                 #  we're not at min

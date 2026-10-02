@@ -5,19 +5,23 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from QIVMarkerText import QIVMarkerText
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from .QIVMarkerText import QIVMarkerText
 
 class QIVGrid(QGraphicsItemGroup):
     """
     Add a grid to the scene.
 
+
+    THIS CLASS IS A BIT OF A MESS
+
           text (string)  - The text to add to the scene.
       position (QPointF) - The position of the text anchor point.
           size (int)     - The text size, in point size
 
-        weight (int)     - Set to an integer in the range 0-99. 50 is normal, 75 is bold.
+
          color (list)    - A 3 element list or tuple containing the RGB triplet
                            specifying the color of the text.
          alpha (int)     - An integer specifying the opacity of the text. 0 is transparent
@@ -25,100 +29,102 @@ class QIVGrid(QGraphicsItemGroup):
 
     """
 
-    def __init__(self, position, style='+', color=[240,0,0], selectColor=[5,220,250],
-                 size=1.0, thickness=1.0, selectThickness=2.0, alpha=255, name='QIVMark',
-                 view=None, selectable=True, movable=False):
-        super(QIVMarker, self).__init__()
+    def __init__(self, layerVerts, layerLabels, intervalVerts, intervalLabels,
+            color=[0,0,0], thickness=2.0, alpha=255, view=None, labelGrid=True,
+            labelColor=[255,255,255], labelBackdrop=True, backdropColor=[0,0,0],
+            backdropAlpha=150):
+        super(QIVGrid, self).__init__()
 
-        self.name = name
-        self.markColor = color
-        self.selectColor = selectColor
-        self.markAlpha = alpha
-        self.markThickness = thickness
-        self.selectThickness = selectThickness
-        self.selected = False
-        self.position = position
+        self.gridColor = color
+        self.gridAlpha = alpha
+        self.gridThickness = thickness
         self.view = view
         self.labels = []
+        self.gridLines = []
+        self.gridLabels = []
+        self.intervalBounds = []
+        self.layerBounds = []
+        self.isCosmetic = True
+        self.labelColor = labelColor
+        self.labelBackdrop = labelBackdrop
+        self.backdropColor = backdropColor
+        self.backdropAlpha = backdropAlpha
 
         #  get the pen to paint the mark
-        markPen = self.getPen(self.markColor, self.markAlpha, '=', self.markThickness)
+        gridPen = self.getPen(self.gridColor, self.gridAlpha, '=', self.gridThickness)
 
-        if (style.lower() == '+') or (style.lower() == 'x'):
-            #  create a plus or x mark
-            mark = QPolygonF()
-            mark.append(QPointF(0,-5))
-            mark.append(QPointF(0,5))
-            mark.append(QPointF(0,0))
-            mark.append(QPointF(-5,0))
-            mark.append(QPointF(5,0))
-            mark.append(QPointF(0,0))
+        #  add the grid layer lines
+        n_layers = int(len(layerVerts) / 2)
+        for h in range(n_layers):
+            i = h * 2
+            j = i + 1
 
-            #  create the graphic primitive
-            self.markItem = QGraphicsPolygonItem(mark)
-            if style.lower() == 'x':
-                #  x is just a plus rotated 45 degrees
-                self.markItem.setRotation(45)
+            gridLine = QGraphicsLineItem(layerVerts[i][0],layerVerts[i][1],
+                    layerVerts[j][0],layerVerts[j][1])
+            gridLine.setPen(gridPen)
+            self.gridLines.append(gridLine)
 
-            #  set the pen, scale, and position
-            self.markItem.setPen(markPen)
-            self.markItem.setScale(size)
-            self.markItem.setPos(position)
+            if h < n_layers - 1:
+                self.layerBounds.append([layerVerts[i][1],layerVerts[j+1][1]])
 
-        elif (style.lower() == 'd'):
-            #  create a diamond mark
-            mark = QPolygonF()
-            mark.append(QPointF(0,-5))
-            mark.append(QPointF(-5,0))
-            mark.append(QPointF(0,5))
-            mark.append(QPointF(5,0))
-            mark.append(QPointF(0,-5))
-            #  bring it around again to fill in the top corner
-            mark.append(QPointF(-5,0))
+            #  disable transforms for the marker and set the movable and selectable flags
+            #self.markItem.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+            gridLine.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            gridLine.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
 
-            #  create the graphic primitive
-            self.markItem = QGraphicsPolygonItem(mark)
+            self.addToGroup(gridLine)
 
-            #  set the pen, scale, and position
-            self.markItem.setPen(markPen)
-            self.markItem.setScale(size)
-            self.markItem.setPos(position)
+            if labelGrid:
+                #  now add the grid label
+                labelPos = QPointF(layerVerts[i][0],layerVerts[i][1])
+                labelOffset = QPointF(0.5,3)
+                if layerLabels is None:
+                    label = str(layerVerts[i][1])
+                else:
+                    label = '%2.1f m' % (layerLabels[h])
+                self.addLabel(label, labelPos, size=10, color=self.labelColor,
+                        alpha=self.gridAlpha, halign='left', valign='top',
+                        offset=labelOffset, isCosmetic=True,
+                        drawBackdrop=self.labelBackdrop, name='gridLabel')
 
-        elif (style.lower() == 'o'):
-            #  create a circle
-            mark = QRectF(-4, -4, 8, 8)
+        #  add the interval lines
+        n_intervals = int(len(intervalVerts) / 2)
+        for h in range(n_intervals):
+            i = h * 2
+            j = i + 1
 
-            #  create the graphic primitive
-            self.markItem = QGraphicsEllipseItem(mark)
+            gridLine = QGraphicsLineItem(intervalVerts[i][0],intervalVerts[i][1],
+                    intervalVerts[j][0],intervalVerts[j][1])
+            gridLine.setPen(gridPen)
+            self.gridLines.append(gridLine)
 
-            #  set the pen, scale, and position
-            self.markItem.setPen(markPen)
-            self.markItem.setScale(size)
-            self.markItem.setPos(position)
-
-        #  disable transforms for the marker and set the movable and selectable flags
-        self.markItem.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        self.markItem.setFlag(QGraphicsItem.ItemIsSelectable, False)
-        self.markItem.setFlag(QGraphicsItem.ItemIsMovable, False)
-
-        #self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selectable)
-        self.setFlag(QGraphicsItem.ItemIsMovable, movable)
-
-        #  by default, marks are selectable
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-
-        #  add the mark to our group
-        self.addToGroup(self.markItem)
+            if h < n_intervals - 1:
+                self.intervalBounds.append([intervalVerts[i][0],intervalVerts[j+1][0]])
 
 
-    def pos(self):
-        '''
-        pos overrides QGraphicsItemGroup's pos method and returns the position of the
-        mark (in image coordinates)
-        '''
+            #  disable transforms for the marker and set the movable and selectable flags
 
-        return self.mapToScene(QPointF(self.markItem.pos().toPoint()))
+            gridLine.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+            gridLine.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
+
+            self.addToGroup(gridLine)
+
+            #  add the label if needed (skip the first one since it obscures layer labels)
+            if labelGrid and h > 0:
+                #  now add the grid label
+                labelPos = QPointF(intervalVerts[i][0],intervalVerts[i][1])
+                labelOffset = QPointF(0,5)
+                label = str(intervalLabels[h])
+                self.addLabel(label, labelPos, size=10, color=self.labelColor,
+                        alpha=self.gridAlpha, halign='left', valign='top',
+                        offset=labelOffset, rotation=90,
+                        isCosmetic=True, drawBackdrop=self.labelBackdrop,
+                        name='gridLabel')
+
+        #self.moveBy(0.5,0)
+
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, False)
 
 
     def getLabelsFromName(self, labelName):
@@ -192,14 +198,27 @@ class QIVGrid(QGraphicsItemGroup):
         return self.labels
 
 
-    def addLabel(self, text, size=10, font='helvetica', italics=False, weight=-1,
-                color=[0,0,0], alpha=255, halign='left', valign='top', name='QIVDimLabel',
-                offset=None):
+    def addCellLabel(self, text, relative_position, interval, layer, **kwargs):
+
+        abs_x = self.intervalBounds[interval][0] + ((self.intervalBounds[interval][1] -
+                self.intervalBounds[interval][0]) * relative_position[0])
+        abs_y = self.layerBounds[layer][0] + ((self.layerBounds[layer][1] -
+                self.layerBounds[layer][0]) * relative_position[1])
+
+        position = QPointF(abs_x, abs_y)
+
+        self.addLabel(text, position, **kwargs)
+
+
+    def addLabel(self, text, position, size=10, font='helvetica', italics=False, weight=-1,
+                color=[0,0,0], alpha=255, halign='left', valign='top', name='gridLabel',
+                offset=None, rotation=0, isCosmetic=False, drawBackdrop=False,
+                backdropColor=[0,0,0], backdropAlpha=150):
         """
-        Add a label to the mark. Labels are children of the mark. Position is assumed to be
-        the mark center.
+        Add a label to the gridline.
 
               text (string)   - The text to add to the dimension line.
+          position (QPointF)
             offset (QPointF)  - An offset from your position
               size (int)      - The text size, in point size
               font (string)   - A string containing the font family to use. Either stick
@@ -227,12 +246,14 @@ class QIVGrid(QGraphicsItemGroup):
             offset = QPointF(0,0)
 
         #  apply the text label offset
-        position = self.markItem.pos() + offset
+        position = position + offset
 
         #  create a QIVMarkerText associated with the provided mark/line
         textItem = QIVMarkerText(position, text, size=size, font=font, italics=italics,
                                  weight=weight, color=color, alpha=alpha, halign=halign,
-                                 valign=valign, name=name, view=self.view)
+                                 valign=valign, view=self.view, rotation=rotation,
+                                 isCosmetic=isCosmetic, drawBackdrop=drawBackdrop,
+                                 backdropColor=backdropColor, backdropAlpha=backdropAlpha)
 
         #  add the label to our list of labels
         self.labels.append(textItem)
@@ -336,7 +357,7 @@ class QIVGrid(QGraphicsItemGroup):
         self.setLabelVisible(labels, False)
 
 
-    def setMarkColor(self, color):
+    def setGridColor(self, color):
         """
         Sets the marker color. Color is a 3 element list or tuple containing the RGB triplet.
         """
@@ -348,19 +369,7 @@ class QIVGrid(QGraphicsItemGroup):
             self.markItem.setPen(markPen)
 
 
-    def setSelectColor(self, color):
-        """
-        Sets the marker color. Color is a 3 element list or tuple containing the RGB triplet.
-        """
-
-        #  change the mark's selection pen color
-        self.selectColor = color
-        if self.selected:
-            markPen = self.getPen(self.selectColor, self.markAlpha, '=', self.selectThickness)
-            self.markItem.setPen(markPen)
-
-
-    def setMarkAlpha(self, alpha):
+    def setGridAlpha(self, alpha):
         """
         Set the alpha level (transparency) of the marker. Valid values
         are 0 (transparent) to 255 (solid)
@@ -373,31 +382,6 @@ class QIVGrid(QGraphicsItemGroup):
             self.markItem.setPen(markPen)
 
 
-    def setSelected(self, selected):
-        '''
-        setSelected sets this mark as being selected. It changes the marker pen color to
-        the "selected" color and sets the "selected" property to true. We're not using Qt's
-        built in selection handling for now so we're not calling the mark's "setSelected"
-        method purposefully.
-        '''
-
-        if selected:
-            markPen = self.getPen(self.selectColor, self.markAlpha, '=', self.selectThickness)
-            self.markItem.setPen(markPen)
-            self.selected = True
-        else:
-            markPen = self.getPen(self.markColor, self.markAlpha, '=', self.markThickness)
-            self.markItem.setPen(markPen)
-            self.selected = False
-
-
-    def isSelected(self):
-        '''
-        isSelected returns true if this mark is selected, false if not.
-        '''
-        return self.selected
-
-
     def getPen(self, color, alpha, style, width):
 
         #  return a pen
@@ -405,10 +389,13 @@ class QIVGrid(QGraphicsItemGroup):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
+
+        if self.isCosmetic:
+            pen.setCosmetic(True)
 
         return pen

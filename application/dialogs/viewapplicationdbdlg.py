@@ -1,8 +1,8 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6 import QtSql
 from dialogs.ui import ui_ViewApplicationDBDlg
 
 class ViewApplicationDBDlg(QDialog, ui_ViewApplicationDBDlg.Ui_viewApplicationDB):

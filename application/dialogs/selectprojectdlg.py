@@ -1,8 +1,8 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6 import QtSql
 from dialogs.ui import  ui_SelectProjectDlg
 
 
@@ -22,7 +22,7 @@ class SelectProjectDlg(QDialog, ui_SelectProjectDlg.Ui_selectProjectDlg):
         self.projectView.show()
 
         self.projSelModel=QItemSelectionModel(self.projModel, self.projectView)
-        self.projectView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.projectView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.projectView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.projectView.setSelectionModel(self.projSelModel)
         
@@ -65,11 +65,11 @@ class SelectProjectDlg(QDialog, ui_SelectProjectDlg.Ui_selectProjectDlg):
                     self.projectView.selectRow(i)
                     break
 
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         if not self.selectedProject:
             QMessageBox.warning(self, "ERROR", 'Nothing was selected!')
