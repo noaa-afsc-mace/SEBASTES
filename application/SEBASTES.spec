@@ -1,6 +1,6 @@
 # -*- mode: python -*-
-a = Analysis(['MainWindow.pyw'],
-             pathex=['G:\\WinPython-64bit-2.7.10.3_Sebastes\\SEBASTES\\application'],
+a = Analysis(['MainWindow.py'],
+             pathex=['D:\\WPy64-313110\\applications\\SEBASTES\\application'],
              hiddenimports=[],
              hookspath=None,
              runtime_hooks=None)

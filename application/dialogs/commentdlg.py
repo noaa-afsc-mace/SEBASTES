@@ -8,7 +8,7 @@ class CommentDlg(QDialog, ui_commentDlg.Ui_commentDlg):
     def __init__(self, comment, targetClass,  targetNumber,   parent=None):
         super(CommentDlg, self).__init__(parent)
         self.setupUi(self)
-        
+        self.comment=None
         self.saveAndExitBtn.clicked.connect(self.saveandexit)
         self.tClassLabel.setText(targetClass)
         self.tNumLabel.setText(str(targetNumber))
@@ -21,7 +21,5 @@ class CommentDlg(QDialog, ui_commentDlg.Ui_commentDlg):
         self.close()
         
     def closeEvent(self, event):
-        if self.sender()==self.saveAndExitBtn:
-            self.accept()
-        else:
-            self.reject()
+        self.accept()
+

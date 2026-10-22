@@ -19,7 +19,7 @@ output_f = open(logFileName, 'w')
 startupinfo = None
 
 #  start SEBASTES and pipe the console output to our errors file
-p = subprocess.Popen('pythonw .\\MainWindow.pyw', stdout=output_f, stderr=output_f,
+p = subprocess.Popen('python .\\MainWindow.py', stdout=output_f, stderr=output_f,
                      startupinfo=startupinfo)
 
 

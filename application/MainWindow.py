@@ -826,7 +826,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     self.dataDB.dbExec(sql)
                     if not Length==None:
                         # this is  line data
-                        line_label='total_target_length'
+                        line_label='length'
                         self.dataDB.dbExec("INSERT INTO lines (project, deployment_ID,frame_number, target_number, line_label, LX1, LY1, LX2, LY2, RX1, RY1, RX2, RY2, X1, Y1, Z1, X2,Y2, Z2, Length, Error)  "+
                                         "VALUES('"+self.activeProject+"','"+self.deployment+"',"+frame_number+","+target_number+",'"+line_label+"',"+LHX+","+LHY+","+LTX+","+LTY+","+RHX+","+RHY+","+
                                         RTX+","+RTY+","+HX+","+HY+","+HZ+","+TX+","+TY+","+TZ+","+Length+","+Error+")")
@@ -1744,8 +1744,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                                         self.dataDB.dbExec("INSERT INTO targets (project, deployment_ID,frame_number, target_number, species_group, annotator, time_stamp)  "+
                                         "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'"+tClass+"','"+self.annotator+"','"+dt.strftime(self.timestamp_format)+"')")
                                         self.dataDB.dbExec("INSERT INTO points (project, deployment_ID,frame_number, target_number, point_label, LX, LY, RX, RY, X,Y,Z, range, error)  "+
-                                        "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'range_to_target',"+points+","+str(self.targetStereoData[1])+","+
-                                        str(self.targetStereoData[2])+","+str(self.targetStereoData[3])+","+str(self.targetStereoData[0])+","+str(self.targetStereoData[1])+")")
+                                        "VALUES('"+self.activeProject+"','"+self.deployment+"',"+self.frameBox.text()+","+str(self.currentTarget)+",'range_to_target',"+points+","+str(self.targetStereoData[2])+","+
+                                        str(self.targetStereoData[3])+","+str(self.targetStereoData[4])+","+str(self.targetStereoData[0])+","+str(self.targetStereoData[1])+")")
                                         self.pairPoints=[]
 
                                         if len(self.linkData)>0:
@@ -1864,6 +1864,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 if target in self.linkData:
                     if self.linkData[1]==target:
                         self.linkData=[]
+                self.dataDB.dbExec("DELETE FROM lines WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(target)+"  AND deployment_ID='"+self.deployment+"'")
+                self.dataDB.dbExec("DELETE FROM points WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(target)+"  AND deployment_ID='"+self.deployment+"'")
                 self.dataDB.dbExec("DELETE FROM targets WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(target)+"  AND deployment_ID='"+self.deployment+"'")
             elif item in self.boxMarks:
                 boxTarget=self.boxMarks[item][0]
@@ -2129,8 +2131,9 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                     targetComment=comment
 
                 dlg=commentdlg.CommentDlg(targetComment,  targetClass,  self.currentTarget)
-                if dlg.exec():
-                    targetComment=dlg.comment
+                dlg.exec()
+                targetComment=dlg.comment
+                if not targetComment==None:
                     self.dataDB.dbExec("UPDATE targets SET comment = '"+targetComment+"' WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
             else:
                 QMessageBox.warning(self, "ERROR", "No Active Target!")
@@ -2232,10 +2235,8 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 self.metadataDockWidget.show()
             # get the annotator now!
             dlg=annotatorDlg.AnnotatorDlg()
-            if dlg.exec():
-                self.annotator=dlg.annotator
-            else:
-                self.annotator='UNID'
+            dlg.exec()
+            self.annotator=dlg.annotator
             self.frameCommentDlg=framecommentdlg.CommentDlg(self)
             self.frameCommentDlg.hide()
             self.reloadData()
@@ -2302,11 +2303,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             target_number, = query.first()
             if target_number!=None:
                 # clear out current length measurements
-
-                self.dataDB.dbExec("UPDATE targets SET Length = NULL"+
-                ", LHX = NULL, LHY = NULL, LTX = NULL, LTY = NULL"+
-                ", RHX = NULL, RHY = NULL, RTX = NULL, RTY = NULL"+
-                ", tx = NULL, ty = NULL, tz = NULL WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                self.dataDB.dbExec("DELETE FROM lines WHERE frame_number = "+self.frameBox.text()+" and target_number ="+str(self.currentTarget)+"  AND line_label='"+self.measurementBox.currentText()+"' AND deployment_ID='"+self.deployment+"'")
                 # reload frame
                             # get the zoom state
                 if self.activeMark[self.gvLeft]:
@@ -2795,7 +2792,7 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
                 #self.targetStereoData=[range, error,  lx, ly, lz]
                 sql=("UPDATE points SET Range = "+str(self.targetStereoData[0])+",  Error = "+str(self.targetStereoData[1])+",  x = "+
                 str(self.targetStereoData[2])+",  y = "+str(self.targetStereoData[3])+",  z = "+str(self.targetStereoData[4])+" WHERE frame_number = "+
-                frame_number+" AND target_number="+target_number+" AND point_label="+point_label)
+                frame_number+" AND target_number="+target_number+" AND point_label='"+point_label+"'")
                 self.dataDB.dbExec(sql)
         except:
             self.showError()
