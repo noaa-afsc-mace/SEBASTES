@@ -1450,7 +1450,10 @@ class SEBASTES(QMainWindow, ui_SEBASTES_dockable.Ui_SEBASTES):
             # this is to quick undo auto targets only
             if self.computeMatchBox.isChecked():
                 # remove current mark and delete from db
+                self.dataDB.dbExec("DELETE FROM lines WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+                self.dataDB.dbExec("DELETE FROM points WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
                 self.dataDB.dbExec("DELETE FROM targets WHERE frame_number = "+self.frameBox.text()+" AND target_number = "+str(self.currentTarget)+"  AND deployment_ID='"+self.deployment+"'")
+
                 # remove mark
                 self.gvLeft.removeItem(self.activeMark[self.gvLeft])
                 self.gvLeft.update()
