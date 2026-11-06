@@ -1,58 +1,62 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\TimeDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'TimeDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QDateEdit, QDialog, QLabel,
+    QPushButton, QSizePolicy, QTimeEdit, QWidget)
 
 class Ui_timeDlg(object):
     def setupUi(self, timeDlg):
-        timeDlg.setObjectName("timeDlg")
+        if not timeDlg.objectName():
+            timeDlg.setObjectName(u"timeDlg")
         timeDlg.resize(274, 216)
-        self.timeEdit = QtWidgets.QTimeEdit(timeDlg)
-        self.timeEdit.setGeometry(QtCore.QRect(20, 100, 171, 41))
-        font = QtGui.QFont()
+        self.timeEdit = QTimeEdit(timeDlg)
+        self.timeEdit.setObjectName(u"timeEdit")
+        self.timeEdit.setGeometry(QRect(20, 100, 171, 41))
+        font = QFont()
         font.setPointSize(14)
         self.timeEdit.setFont(font)
-        self.timeEdit.setTime(QtCore.QTime(0, 0, 0))
-        self.timeEdit.setObjectName("timeEdit")
-        self.dateEdit = QtWidgets.QDateEdit(timeDlg)
-        self.dateEdit.setGeometry(QtCore.QRect(20, 40, 171, 41))
-        font = QtGui.QFont()
-        font.setPointSize(14)
+        self.timeEdit.setTime(QTime(0, 0, 0))
+        self.dateEdit = QDateEdit(timeDlg)
+        self.dateEdit.setObjectName(u"dateEdit")
+        self.dateEdit.setGeometry(QRect(20, 40, 171, 41))
         self.dateEdit.setFont(font)
-        self.dateEdit.setObjectName("dateEdit")
-        self.okBtn = QtWidgets.QPushButton(timeDlg)
-        self.okBtn.setGeometry(QtCore.QRect(150, 160, 111, 41))
-        font = QtGui.QFont()
-        font.setPointSize(14)
+        self.okBtn = QPushButton(timeDlg)
+        self.okBtn.setObjectName(u"okBtn")
+        self.okBtn.setGeometry(QRect(150, 160, 111, 41))
         self.okBtn.setFont(font)
-        self.okBtn.setObjectName("okBtn")
-        self.cancelBtn = QtWidgets.QPushButton(timeDlg)
-        self.cancelBtn.setGeometry(QtCore.QRect(20, 160, 121, 41))
-        font = QtGui.QFont()
-        font.setPointSize(14)
+        self.cancelBtn = QPushButton(timeDlg)
+        self.cancelBtn.setObjectName(u"cancelBtn")
+        self.cancelBtn.setGeometry(QRect(20, 160, 121, 41))
         self.cancelBtn.setFont(font)
-        self.cancelBtn.setObjectName("cancelBtn")
-        self.label = QtWidgets.QLabel(timeDlg)
-        self.label.setGeometry(QtCore.QRect(30, 10, 181, 16))
-        font = QtGui.QFont()
-        font.setPointSize(14)
+        self.label = QLabel(timeDlg)
+        self.label.setObjectName(u"label")
+        self.label.setGeometry(QRect(30, 10, 181, 16))
         self.label.setFont(font)
-        self.label.setObjectName("label")
 
         self.retranslateUi(timeDlg)
-        QtCore.QMetaObject.connectSlotsByName(timeDlg)
+
+        QMetaObject.connectSlotsByName(timeDlg)
+    # setupUi
 
     def retranslateUi(self, timeDlg):
-        _translate = QtCore.QCoreApplication.translate
-        timeDlg.setWindowTitle(_translate("timeDlg", "Dialog"))
-        self.timeEdit.setDisplayFormat(_translate("timeDlg", "hh:mm:ss"))
-        self.okBtn.setText(_translate("timeDlg", "OK"))
-        self.cancelBtn.setText(_translate("timeDlg", "Cancel"))
-        self.label.setText(_translate("timeDlg", "Enter a date/ time..."))
+        timeDlg.setWindowTitle(QCoreApplication.translate("timeDlg", u"Dialog", None))
+        self.timeEdit.setDisplayFormat(QCoreApplication.translate("timeDlg", u"hh:mm:ss", None))
+        self.okBtn.setText(QCoreApplication.translate("timeDlg", u"OK", None))
+        self.cancelBtn.setText(QCoreApplication.translate("timeDlg", u"Cancel", None))
+        self.label.setText(QCoreApplication.translate("timeDlg", u"Enter a date/ time...", None))
+    # retranslateUi
+

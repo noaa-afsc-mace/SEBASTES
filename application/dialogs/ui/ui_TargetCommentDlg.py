@@ -1,73 +1,92 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\TargetCommentDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'TargetCommentDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QDialog, QGridLayout, QLabel,
+    QPlainTextEdit, QPushButton, QSizePolicy, QVBoxLayout,
+    QWidget)
 
 class Ui_targetCommentDlg(object):
     def setupUi(self, targetCommentDlg):
-        targetCommentDlg.setObjectName("targetCommentDlg")
+        if not targetCommentDlg.objectName():
+            targetCommentDlg.setObjectName(u"targetCommentDlg")
         targetCommentDlg.resize(400, 300)
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(targetCommentDlg)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.gridLayout = QtWidgets.QGridLayout()
+        self.verticalLayout_2 = QVBoxLayout(targetCommentDlg)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.gridLayout = QGridLayout()
+        self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(-1, 10, -1, -1)
-        self.gridLayout.setObjectName("gridLayout")
-        self.label = QtWidgets.QLabel(targetCommentDlg)
-        font = QtGui.QFont()
+        self.label = QLabel(targetCommentDlg)
+        self.label.setObjectName(u"label")
+        font = QFont()
         font.setPointSize(12)
         self.label.setFont(font)
-        self.label.setObjectName("label")
+
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.tClassLabel = QtWidgets.QLabel(targetCommentDlg)
-        font = QtGui.QFont()
-        font.setPointSize(12)
+
+        self.tClassLabel = QLabel(targetCommentDlg)
+        self.tClassLabel.setObjectName(u"tClassLabel")
         self.tClassLabel.setFont(font)
-        self.tClassLabel.setText("")
-        self.tClassLabel.setObjectName("tClassLabel")
+
         self.gridLayout.addWidget(self.tClassLabel, 0, 1, 1, 1)
-        self.label_3 = QtWidgets.QLabel(targetCommentDlg)
-        font = QtGui.QFont()
-        font.setPointSize(12)
+
+        self.label_3 = QLabel(targetCommentDlg)
+        self.label_3.setObjectName(u"label_3")
         self.label_3.setFont(font)
-        self.label_3.setObjectName("label_3")
+
         self.gridLayout.addWidget(self.label_3, 1, 0, 1, 1)
-        self.tNumLabel = QtWidgets.QLabel(targetCommentDlg)
-        font = QtGui.QFont()
-        font.setPointSize(12)
+
+        self.tNumLabel = QLabel(targetCommentDlg)
+        self.tNumLabel.setObjectName(u"tNumLabel")
         self.tNumLabel.setFont(font)
-        self.tNumLabel.setText("")
-        self.tNumLabel.setObjectName("tNumLabel")
+
         self.gridLayout.addWidget(self.tNumLabel, 1, 1, 1, 1)
+
+
         self.verticalLayout_2.addLayout(self.gridLayout)
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.commentBox = QtWidgets.QPlainTextEdit(targetCommentDlg)
-        font = QtGui.QFont()
-        font.setPointSize(12)
+
+        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.commentBox = QPlainTextEdit(targetCommentDlg)
+        self.commentBox.setObjectName(u"commentBox")
         self.commentBox.setFont(font)
-        self.commentBox.setObjectName("commentBox")
+
         self.verticalLayout.addWidget(self.commentBox)
+
+
         self.verticalLayout_2.addLayout(self.verticalLayout)
-        self.saveAndExitBtn = QtWidgets.QPushButton(targetCommentDlg)
-        font = QtGui.QFont()
-        font.setPointSize(12)
+
+        self.saveAndExitBtn = QPushButton(targetCommentDlg)
+        self.saveAndExitBtn.setObjectName(u"saveAndExitBtn")
         self.saveAndExitBtn.setFont(font)
-        self.saveAndExitBtn.setObjectName("saveAndExitBtn")
+
         self.verticalLayout_2.addWidget(self.saveAndExitBtn)
 
+
         self.retranslateUi(targetCommentDlg)
-        QtCore.QMetaObject.connectSlotsByName(targetCommentDlg)
+
+        QMetaObject.connectSlotsByName(targetCommentDlg)
+    # setupUi
 
     def retranslateUi(self, targetCommentDlg):
-        _translate = QtCore.QCoreApplication.translate
-        targetCommentDlg.setWindowTitle(_translate("targetCommentDlg", "Insert Target Comment"))
-        self.label.setText(_translate("targetCommentDlg", "Active Target Class"))
-        self.label_3.setText(_translate("targetCommentDlg", "Active Target number"))
-        self.saveAndExitBtn.setText(_translate("targetCommentDlg", "Save Comment"))
+        targetCommentDlg.setWindowTitle(QCoreApplication.translate("targetCommentDlg", u"Insert Target Comment", None))
+        self.label.setText(QCoreApplication.translate("targetCommentDlg", u"Active Target Class", None))
+        self.tClassLabel.setText("")
+        self.label_3.setText(QCoreApplication.translate("targetCommentDlg", u"Active Target number", None))
+        self.tNumLabel.setText("")
+        self.saveAndExitBtn.setText(QCoreApplication.translate("targetCommentDlg", u"Save Comment", None))
+    # retranslateUi
+

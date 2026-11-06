@@ -1,47 +1,72 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\WPy64-3740\SEBASTES\application\dialogs\ui\CamSelDlg.ui'
-#
-# Created by: PyQt5 UI code generator 5.13.0
-#
-# WARNING! All changes made in this file will be lost!
+################################################################################
+## Form generated from reading UI file 'CamSelDlg.ui'
+##
+## Created by: Qt User Interface Compiler version 6.11.1
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
 
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QAbstractButton, QApplication, QComboBox, QDialog,
+    QDialogButtonBox, QFormLayout, QLabel, QSizePolicy,
+    QWidget)
 
 class Ui_camSelDlg(object):
     def setupUi(self, camSelDlg):
-        camSelDlg.setObjectName("camSelDlg")
+        if not camSelDlg.objectName():
+            camSelDlg.setObjectName(u"camSelDlg")
         camSelDlg.resize(437, 107)
-        self.formLayout_2 = QtWidgets.QFormLayout(camSelDlg)
-        self.formLayout_2.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
-        self.formLayout_2.setObjectName("formLayout_2")
-        self.formLayout = QtWidgets.QFormLayout()
-        self.formLayout.setObjectName("formLayout")
-        self.formLayout_2.setLayout(0, QtWidgets.QFormLayout.LabelRole, self.formLayout)
-        self.label = QtWidgets.QLabel(camSelDlg)
-        self.label.setObjectName("label")
-        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label)
-        self.leftBox = QtWidgets.QComboBox(camSelDlg)
-        self.leftBox.setObjectName("leftBox")
-        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.leftBox)
-        self.label_2 = QtWidgets.QLabel(camSelDlg)
-        self.label_2.setObjectName("label_2")
-        self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_2)
-        self.rightBox = QtWidgets.QComboBox(camSelDlg)
-        self.rightBox.setObjectName("rightBox")
-        self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.rightBox)
-        self.buttonBox = QtWidgets.QDialogButtonBox(camSelDlg)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
-        self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.buttonBox)
+        self.formLayout_2 = QFormLayout(camSelDlg)
+        self.formLayout_2.setObjectName(u"formLayout_2")
+        self.formLayout_2.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        self.formLayout = QFormLayout()
+        self.formLayout.setObjectName(u"formLayout")
+
+        self.formLayout_2.setLayout(0, QFormLayout.ItemRole.LabelRole, self.formLayout)
+
+        self.label = QLabel(camSelDlg)
+        self.label.setObjectName(u"label")
+
+        self.formLayout_2.setWidget(1, QFormLayout.ItemRole.LabelRole, self.label)
+
+        self.leftBox = QComboBox(camSelDlg)
+        self.leftBox.setObjectName(u"leftBox")
+
+        self.formLayout_2.setWidget(1, QFormLayout.ItemRole.FieldRole, self.leftBox)
+
+        self.label_2 = QLabel(camSelDlg)
+        self.label_2.setObjectName(u"label_2")
+
+        self.formLayout_2.setWidget(3, QFormLayout.ItemRole.LabelRole, self.label_2)
+
+        self.rightBox = QComboBox(camSelDlg)
+        self.rightBox.setObjectName(u"rightBox")
+
+        self.formLayout_2.setWidget(3, QFormLayout.ItemRole.FieldRole, self.rightBox)
+
+        self.buttonBox = QDialogButtonBox(camSelDlg)
+        self.buttonBox.setObjectName(u"buttonBox")
+        self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+
+        self.formLayout_2.setWidget(4, QFormLayout.ItemRole.FieldRole, self.buttonBox)
+
 
         self.retranslateUi(camSelDlg)
-        QtCore.QMetaObject.connectSlotsByName(camSelDlg)
+
+        QMetaObject.connectSlotsByName(camSelDlg)
+    # setupUi
 
     def retranslateUi(self, camSelDlg):
-        _translate = QtCore.QCoreApplication.translate
-        camSelDlg.setWindowTitle(_translate("camSelDlg", "Dialog"))
-        self.label.setText(_translate("camSelDlg", "Left Display"))
-        self.label_2.setText(_translate("camSelDlg", "Right Display"))
+        camSelDlg.setWindowTitle(QCoreApplication.translate("camSelDlg", u"Dialog", None))
+        self.label.setText(QCoreApplication.translate("camSelDlg", u"Left Display", None))
+        self.label_2.setText(QCoreApplication.translate("camSelDlg", u"Right Display", None))
+    # retranslateUi
+

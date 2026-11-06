@@ -5,9 +5,9 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
 
 class QIVMarkerText(QGraphicsSimpleTextItem):
@@ -41,7 +41,8 @@ class QIVMarkerText(QGraphicsSimpleTextItem):
 
     def __init__(self, position, text, offset=QPointF(0,0), size=10, font='helvetica', italics=False,
                  weight=-1, color=[0,0,0], alpha=255, halign='left', valign='bottom',
-                 selectable=False, movable=False, name='MarkerText', view=None, rotation=0):
+                 selectable=False, movable=False, name='MarkerText', view=None, rotation=0,
+                 isCosmetic=False, drawBackdrop=False, backdropColor=[0,0,0], backdropAlpha=150):
 
         super(QIVMarkerText, self).__init__(text)
 
@@ -51,17 +52,26 @@ class QIVMarkerText(QGraphicsSimpleTextItem):
         self.font = font
         self.size = size
         self.alpha = alpha
+        #  check if the position was passed as a list
+        if not isinstance(position, QPointF):
+        #if isinstance(position[0], list):
+            #  it was, assume it is in the form [x,y]
+            position = QPointF(position[0][0], position[0][1])
         self.position = position
         self.halign = halign
         self.valign = valign
         self.view = view
         self.offset = offset
         self.rotation = rotation
+        self.isCosmetic = isCosmetic
+        self.backdrop_color = backdropColor
+        self.draw_backdrop = drawBackdrop
+        self.backdrop_alpha = backdropAlpha
 
         #  set the movable and selectable flags
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selectable)
-        self.setFlag(QGraphicsItem.ItemIsMovable, movable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, selectable)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, movable)
 
         #  create the font and pen
         self.font = QFont(font, size, weight, italics)
@@ -69,6 +79,8 @@ class QIVMarkerText(QGraphicsSimpleTextItem):
 
         #  and set our font
         self.setFont(self.font)
+
+        self.setRotation(self.rotation)
 
         #  set the text position
         self.setPos(self.position, 1)
@@ -155,12 +167,21 @@ class QIVMarkerText(QGraphicsSimpleTextItem):
         #  set the scaled position of the text
         self.setPos(self.position, scale)
 
+        #  paint the text backdrop if enabled
+        if self.draw_backdrop:
+            backBrush = QBrush(QColor(self.backdrop_color[0],self.backdrop_color[1],
+                    self.backdrop_color[2],self.backdrop_alpha))
+            painter.setBrush(backBrush)
+            painter.drawRect(self.boundingRect())
+        else:
+            painter.setBrush(QBrush())
+
         #  set the painter font and brush
         painter.setFont(self.font)
         painter.setPen(self.pen)
 
         #  get the text bounding box
-        boundingRect = self.boundingRect()
+        boundingRect = self.boundingRect().toRect()
 
         #  draw the text
         painter.drawText(boundingRect.x(), boundingRect.y() + boundingRect.height(), self.text())
@@ -177,10 +198,13 @@ class QIVMarkerText(QGraphicsSimpleTextItem):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
+
+        if self.isCosmetic:
+            pen.setCosmetic(True)
 
         return pen

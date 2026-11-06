@@ -5,9 +5,9 @@ NOAA Alaska Fisheries Science Center
 rick.towler@noaa.gov
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from .QIVMarkerText import QIVMarkerText
 
 class QIVDimensionLine(QGraphicsItemGroup):
@@ -112,7 +112,7 @@ class QIVDimensionLine(QGraphicsItemGroup):
         #textItem.setMarkerLabel(True)
         self.labels.append(textItem)
         self.addToGroup(textItem)
-        
+
         self.prepareGeometryChange()
 
 
@@ -377,7 +377,7 @@ class dimensionLine(QGraphicsItem):
             self.updateTails()
 
         #  set the selectable flags to false
-        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, False)
 
 
     def setPoints(self, p1, p2):
@@ -544,11 +544,11 @@ class dimensionLine(QGraphicsItem):
         pen = QPen(penColor)
         pen.setWidthF(width)
         if style.lower() == '-':
-            pen.setStyle(Qt.DashLine)
+            pen.setStyle(Qt.PenStyle.DashLine)
         elif style.lower() == '.':
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
         else:
-            pen.setStyle(Qt.SolidLine)
+            pen.setStyle(Qt.PenStyle.SolidLine)
 
         return pen
 

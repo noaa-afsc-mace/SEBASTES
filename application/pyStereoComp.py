@@ -158,7 +158,7 @@ class pyStereoComp(object):
             return False,  zeros((1, 2)),  'Point too close to the image edge'
         #find point
         kernel_fish=gray_left[int(point[0, 1]-block):int(point[0, 1]+block),int(point[0, 0]-block):int(point[0, 0]+block)]
-        im_strip=gray_right[max(int(point[0, 1]-block*2), 0):max(int(point[0, 1]+block*2), kernel_fish.shape[0]),:]
+        im_strip=gray_right[max([int(point[0, 1]-block*2), 0]):max([int(point[0, 1]+block*2), kernel_fish.shape[0]]),:]
         try:
             res = cv2.matchTemplate(im_strip,kernel_fish,eval('cv2.TM_CCOEFF_NORMED'))
         except:

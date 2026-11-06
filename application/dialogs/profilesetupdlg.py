@@ -1,8 +1,8 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6 import QtSql
 from dialogs.ui import  ui_ProfileSetupDlg
 from dialogs import makeseldlg, frameextracthelpdlg,  timestampextracthelpdlg, subsamplemaskhelpdlg, insertspcdlg, insertmtddlg
 import sys, traceback
@@ -48,7 +48,7 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
         self.speciesView.setModel(self.speciesModel)
         self.speciesView.show()
         self.speciesSelModel=QItemSelectionModel(self.speciesModel, self.speciesView)
-        self.speciesView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.speciesView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.speciesView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.speciesView.setSelectionModel(self.speciesSelModel)
         
@@ -56,7 +56,7 @@ class ProfileSetupDlg(QDialog, ui_ProfileSetupDlg.Ui_profileSetupDlg):
         self.metadataView.setModel(self.metadataModel)
         self.metadataView.show()
         self.metadataTypesSelModel=QItemSelectionModel(self.metadataModel, self.metadataView)
-        self.metadataView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.metadataView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.metadataView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.metadataView.setSelectionModel(self.metadataTypesSelModel)
 

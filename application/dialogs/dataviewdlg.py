@@ -1,8 +1,8 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5 import QtSql
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6 import QtSql
 from dialogs.ui import  ui_DataviewDlg
 from dialogs import speciesgroupdlg
 
@@ -10,8 +10,8 @@ from dialogs import speciesgroupdlg
 
 
 class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
-    selectionEvent = pyqtSignal(int, int)
-    keyPress = pyqtSignal(object, object)
+    selectionEvent = Signal(int, int)
+    keyPress = Signal(object, object)
     
     def __init__(self, parent=None):
         super(DataViewDlg, self).__init__(parent)
@@ -26,7 +26,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
         self.frameTable.show()
 
         self.frameSelModel=QItemSelectionModel(self.frameModel, self.frameTable)
-        self.frameTable.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.frameTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.frameTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.frameTable.setSelectionModel(self.frameSelModel)
         
@@ -35,7 +35,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
         self.metadataTable.show()
 
         self.metadataSelModel=QItemSelectionModel(self.metadataModel, self.metadataTable)
-        self.metadataTable.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.metadataTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.metadataTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.metadataTable.setSelectionModel(self.metadataSelModel)
         
@@ -44,7 +44,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
         self.targetTable.show()
         
         self.targetSelModel=QItemSelectionModel(self.targetModel, self.targetTable)
-        self.targetTable.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.targetTable.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.targetTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.targetTable.setSelectionModel(self.targetSelModel)
         
@@ -67,7 +67,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
         self.frameModel.setQuery("SELECT FRAME_NUMBER, FRAME_TIME, COMMENT FROM frames WHERE deployment_id='"+self.deployment+"' ORDER BY frame_number", self.db)
         self.frameTable.reset()
         self.frameTable.scrollToBottom()
-        self.targetModel.setQuery("SELECT FRAME_NUMBER,TARGET_NUMBER,SPECIES_GROUP,LX,LY,RX,RY,LENGTH,RANGE,ERROR,TARGET_LINK,COMMENT FROM targets WHERE deployment_id='"+self.deployment+"' ORDER BY frame_number, target_number", self.db)
+        self.targetModel.setQuery("SELECT FRAME_NUMBER,TARGET_NUMBER,SPECIES_GROUP,TARGET_LINK,COMMENT FROM targets WHERE deployment_id='"+self.deployment+"' ORDER BY frame_number, target_number", self.db)
         self.targetTable.reset()
         if scroll:
             self.targetTable.scrollToBottom()
@@ -81,7 +81,7 @@ class DataViewDlg(QDialog, ui_DataviewDlg.Ui_dataviewDlg):
                 speciesList.append(query.value(0))
             dlg.setList(speciesList)
             if dlg.exec_():
-                self.targetModel.setQuery("SELECT FRAME_NUMBER,TARGET_NUMBER,SPECIES_GROUP,LX,LY,RX,RY,LENGTH,RANGE,ERROR,TARGET_LINK,COMMENT FROM targets WHERE species_group='"+dlg.listWidget.currentItem().text()+"' AND deployment_id='"+self.deployment+"' ORDER BY frame_number, target_number", self.db)
+                self.targetModel.setQuery("SELECT FRAME_NUMBER,TARGET_NUMBER,SPECIES_GROUP,TARGET_LINK,COMMENT FROM targets WHERE species_group='"+dlg.listWidget.currentItem().text()+"' AND deployment_id='"+self.deployment+"' ORDER BY frame_number, target_number", self.db)
                 self.targetTable.reset()
         else:
             self.refreshView()

@@ -1,8 +1,8 @@
 
 import sys,  traceback
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_TimestampExtractHelpDlg
 
 class TimestampExtractHelpDlg(QDialog, ui_TimestampExtractHelpDlg.Ui_timestampExtractHelpDlg):
@@ -12,7 +12,7 @@ class TimestampExtractHelpDlg(QDialog, ui_TimestampExtractHelpDlg.Ui_timestampEx
         self.okBtn.clicked.connect(self.exit)
         self.extractBtn.clicked.connect(self.extractTimestamp)
     
-    @pyqtSlot()
+    @Slot()
     def extractTimestamp(self):
         try:
             filename_string=self.filenameEdit.text()
@@ -33,6 +33,6 @@ class TimestampExtractHelpDlg(QDialog, ui_TimestampExtractHelpDlg.Ui_timestampEx
             QMessageBox.warning(self, "ERROR", txt)
             self.resultLabel.setText("NO GOOD!")
         
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         self.accept()

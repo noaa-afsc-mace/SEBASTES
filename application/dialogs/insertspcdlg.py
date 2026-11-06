@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_InsertSpcDlg
 
 class InsertSpcDlg(QDialog, ui_InsertSpcDlg.Ui_insertSpcDlg):
@@ -15,16 +15,16 @@ class InsertSpcDlg(QDialog, ui_InsertSpcDlg.Ui_insertSpcDlg):
         self.col=QColor(255, 0, 0)
         self.btnColLabel.setStyleSheet("QLabel { background-color : rgb("+str(self.col.getRgb()[0])+","+str(self.col.getRgb()[1])+","+str(self.col.getRgb()[2])+");}")
         
-    @pyqtSlot()
+    @Slot()
     def getColor(self):
         self.col=QColorDialog().getColor(self.col,  self)
         self.btnColLabel.setStyleSheet("QLabel { background-color : rgb("+str(self.col.getRgb()[0])+","+str(self.col.getRgb()[1])+","+str(self.col.getRgb()[2])+");}")
         
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
-    @pyqtSlot()
+    @Slot()
     def save(self):
         if self.speciesEdit.text()=='':
             QMessageBox.warning(self, "ERROR", "No species entered!")

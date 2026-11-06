@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_SubsampleMaskHelpDlg
 
 class SubsampleMaskHelpDlg(QDialog, ui_SubsampleMaskHelpDlg.Ui_subsampleMaskHelpDlg):
@@ -10,6 +10,6 @@ class SubsampleMaskHelpDlg(QDialog, ui_SubsampleMaskHelpDlg.Ui_subsampleMaskHelp
         self.setupUi(self)
         self.okBtn.clicked.connect(self.exit)
 
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         self.accept()

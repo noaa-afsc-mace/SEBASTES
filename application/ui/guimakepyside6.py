@@ -14,12 +14,12 @@ import platform
 import stat
 import sys
 
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
 
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"
 
 
 class OptionsForm(QDialog):
@@ -27,47 +27,38 @@ class OptionsForm(QDialog):
     def __init__(self, parent=None):
         super(OptionsForm, self).__init__(parent)
 
-        settings = QSettings('afsc.noaa.gov','makepyqt5')
-        pyuic5Label = QLabel("pyuic5")
-        self.pyuic5Label = QLabel(settings.value("pyuic5", PYUIC5))
-        self.pyuic5Label.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-        pyuic5Button = QPushButton("py&uic5...")
-        pyrcc5Label = QLabel("pyrcc5")
-        self.pyrcc5Label = QLabel(settings.value("pyrcc5", PYRCC5))
-        self.pyrcc5Label.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-        pyrcc5Button = QPushButton("pyr&cc5...")
-        pylupdate5Label = QLabel("pylupdate5")
-        self.pylupdate5Label = QLabel(settings.value("pylupdate5",PYLUPDATE5))
-        self.pylupdate5Label.setFrameStyle(QFrame.StyledPanel|
-                                           QFrame.Sunken)
-        pylupdate5Button = QPushButton("py&lupdate5...")
+        settings = QSettings('afsc.noaa.gov','makepySide6')
+        pyuic6Label = QLabel("pyuic6")
+        self.pyuic6Label = QLabel(settings.value("pyuic6", PYUIC6))
+        self.pyuic6Label.setFrameStyle(QFrame.Shape.StyledPanel|QFrame.Shadow.Sunken)
+        pyuic6Button = QPushButton("py&uic6...")
+        pylupdate6Label = QLabel("pylupdate6")
+        self.pylupdate6Label = QLabel(settings.value("pylupdate6",PYLUPDATE6))
+        self.pylupdate6Label.setFrameStyle(QFrame.Shape.StyledPanel|QFrame.Shadow.Sunken)
+        pylupdate6Button = QPushButton("py&lupdate6...")
         lreleaseLabel = QLabel("lrelease")
         self.lreleaseLabel = QLabel(settings.value("lrelease","lrelease"))
-        self.lreleaseLabel.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
+        self.lreleaseLabel.setFrameStyle(QFrame.Shape.StyledPanel|QFrame.Shadow.Sunken)
         lreleaseButton = QPushButton("l&release...")
 
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|
-                                     QDialogButtonBox.Cancel)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|
+                                     QDialogButtonBox.StandardButton.Cancel)
 
         layout = QGridLayout()
-        layout.addWidget(pyuic5Label, 0, 0)
-        layout.addWidget(self.pyuic5Label, 0, 1)
-        layout.addWidget(pyuic5Button, 0, 2)
-        layout.addWidget(pyrcc5Label, 1, 0)
-        layout.addWidget(self.pyrcc5Label, 1, 1)
-        layout.addWidget(pyrcc5Button, 1, 2)
-        layout.addWidget(pylupdate5Label, 2, 0)
-        layout.addWidget(self.pylupdate5Label, 2, 1)
-        layout.addWidget(pylupdate5Button, 2, 2)
+        layout.addWidget(pyuic6Label, 0, 0)
+        layout.addWidget(self.pyuic6Label, 0, 1)
+        layout.addWidget(pyuic6Button, 0, 2)
+        layout.addWidget(pylupdate6Label, 2, 0)
+        layout.addWidget(self.pylupdate6Label, 2, 1)
+        layout.addWidget(pylupdate6Button, 2, 2)
         layout.addWidget(lreleaseLabel, 3, 0)
         layout.addWidget(self.lreleaseLabel, 3, 1)
         layout.addWidget(lreleaseButton, 3, 2)
         layout.addWidget(buttonBox, 4, 0, 1, 3)
         self.setLayout(layout)
 
-        pyuic5Button.clicked.connect(lambda: self.setPath("pyuic5"))
-        pyrcc5Button.clicked.connect(lambda: self.setPath("pyrcc5"))
-        pylupdate5Button.clicked.connect(lambda: self.setPath("pylupdate5"))
+        pyuic6Button.clicked.connect(lambda: self.setPath("pyuic6"))
+        pylupdate6Button.clicked.connect(lambda: self.setPath("pylupdate6"))
         lreleaseButton.clicked.connect(lambda: self.setPath("lrelease"))
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -76,21 +67,18 @@ class OptionsForm(QDialog):
 
 
     def accept(self):
-        settings = QSettings('afsc.noaa.gov','makepyqt5')
-        settings.setValue("pyuic5", self.pyuic5Label.text())
-        settings.setValue("pyrcc5", self.pyrcc5Label.text())
-        settings.setValue("pylupdate5",self.pylupdate5Label.text())
+        settings = QSettings('afsc.noaa.gov','makepySide6')
+        settings.setValue("pyuic6", self.pyuic6Label.text())
+        settings.setValue("pylupdate6",self.pylupdate6Label.text())
         settings.setValue("lrelease", self.lreleaseLabel.text())
         QDialog.accept(self)
 
 
     def setPath(self, tool):
-        if tool == "pyuic5":
-            label = self.pyuic5Label
-        elif tool == "pyrcc5":
-            label = self.pyrcc5Label
-        elif tool == "pylupdate5":
-            label = self.pylupdate5Label
+        if tool == "pyuic6":
+            label = self.pyuic6Label
+        elif tool == "pylupdate6":
+            label = self.pylupdate6Label
         elif tool == "lrelease":
             label = self.lreleaseLabel
         path = QFileDialog.getOpenFileName(self, "Make PyQt - Set Tool Path", label.text())
@@ -107,7 +95,7 @@ class Form(QMainWindow):
         self.pathLabel = QLabel(sys.argv[1] \
                 if len(sys.argv) > 1 and os.access(sys.argv[1], os.F_OK) \
                 else os.getcwd())
-        self.pathLabel.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
+        self.pathLabel.setFrameStyle(QFrame.Shape.StyledPanel|QFrame.Shadow.Sunken)
         self.pathLabel.setToolTip("The relative path; all actions will "
                 "take place here,<br>and in this path's subdirectories "
                 "if the Recurse checkbox is checked")
@@ -119,44 +107,44 @@ class Form(QMainWindow):
                 "in the path directory,<br>and all its subdirectories, "
                 "as deep as they go.")
         self.transCheckBox = QCheckBox("&Translate")
-        self.transCheckBox.setToolTip("Runs <b>PYLUPDATE5</b> on all "
+        self.transCheckBox.setToolTip("Runs <b>PYLUPDATE6</b> on all "
                 "<tt>.py</tt> and <tt>.pyw</tt> files in conjunction "
                 "with each <tt>.ts</tt> file.<br>Then runs "
                 "<b>lrelease</b> on all <tt>.ts</tt> files to produce "
                 "corresponding <tt>.qm</tt> files.<br>The "
                 "<tt>.ts</tt> files must have been created initially by "
-                "running <b>PYLUPDATE5</b><br>directly on a <tt>.py</tt> "
+                "running <b>PYLUPDATE6</b><br>directly on a <tt>.py</tt> "
                 "or <tt>.pyw</tt> file using the <tt>-ts</tt> option.")
         self.debugCheckBox = QCheckBox("&Dry Run")
         self.debugCheckBox.setToolTip("Shows the actions that would "
                 "take place but does not do them.")
         self.logBrowser = QTextBrowser()
-        self.logBrowser.setLineWrapMode(QTextEdit.NoWrap)
+        self.logBrowser.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
         self.buttonBox = QDialogButtonBox()
         menu = QMenu(self)
         toolsAction = menu.addAction("&Tool paths...")
         aboutAction = menu.addAction("&About")
         moreButton = self.buttonBox.addButton("&More",
-                QDialogButtonBox.ActionRole)
+                QDialogButtonBox.ButtonRole.ActionRole)
         moreButton.setMenu(menu)
         moreButton.setToolTip("Use <b>More-&gt;Tool paths</b> to set the "
                 "paths to the tools if they are not found by default")
         self.buildButton = self.buttonBox.addButton("&Build",
-                QDialogButtonBox.ActionRole)
-        self.buildButton.setToolTip("Runs <b>PYUIC5</b> on all "
+                QDialogButtonBox.ButtonRole.ActionRole)
+        self.buildButton.setToolTip("Runs <b>PYUIC6</b> on all "
                 "<tt>.ui</tt> "
-                "files and <b>PYRCC5</b> on all <tt>.qrc</tt> files "
-                "that are out-of-date.<br>Also runs <b>PYLUPDATE5</b> "
+                "files "
+                "that are out-of-date.<br>Also runs <b>PYLUPDATE6</b> "
                 "and <b>lrelease</b> if the Translate checkbox is "
                 "checked.")
         self.cleanButton = self.buttonBox.addButton("&Clean",
-                QDialogButtonBox.ActionRole)
+                QDialogButtonBox.ButtonRole.ActionRole)
         self.cleanButton.setToolTip("Deletes all <tt>.py</tt> files that "
                 "were generated from <tt>.ui</tt> and <tt>.qrc</tt> "
                 "files,<br>i.e., all files matching <tt>qrc_*.py</tt> "
                 " and <tt>ui_*.py.")
         quitButton = self.buttonBox.addButton("&Quit",
-                QDialogButtonBox.RejectRole)
+                QDialogButtonBox.ButtonRole.RejectRole)
 
         topLayout = QHBoxLayout()
         topLayout.addWidget(pathLabel)
@@ -187,30 +175,28 @@ class Form(QMainWindow):
 
 
     def about(self):
-        QMessageBox.about(self, "About Make PyQt5",
-                """<b>Make PyQt5</b> v %s
-                <p>Copyright &copy; 2007 Qtrac Ltd. 
-                All rights reserved.
-                <p>This application, modified to work with PyQt5, can be used to build PyQt
+        QMessageBox.about(self, "About Make PySide6",
+                """<b>Make PySide6</b> v %s
+                <p>This application, modified to work with PySide6, can be used to build PyQt
                 applications.
-                It runs pyuic5, pyrcc5, pylupdate5, and lrelease as
-                required, although pylupdate5 must be run directly to
+                It runs pyuic6, pylupdate6, and lrelease as
+                required, although pylupdate6 must be run directly to
                 create the initial .ts files.
                 <p>Python %s - Qt %s - PyQt %s on %s""" % (
                 __version__, platform.python_version(),
-                QT_VERSION_STR, PYQT_VERSION_STR, platform.system()))
+                Qt.QT_VERSION_STR, Qt.PYQT_VERSION_STR, platform.system()))
 
 
     def setPath(self):
         path = QFileDialog.getExistingDirectory(self,
-                "Make PyQt - Set Path", self.pathLabel.text())
+                "Make PySide - Set Path", self.pathLabel.text())
         if path:
             self.pathLabel.setText(QDir.toNativeSeparators(path))
 
 
     def setToolPaths(self):
         dlg = OptionsForm(self)
-        dlg.exec_()
+        dlg.exec()
 
 
     def build(self):
@@ -239,7 +225,7 @@ class Form(QMainWindow):
                 self.transCheckBox, self.debugCheckBox):
             widget.setEnabled(enable)
         if not enable:
-            QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+            QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
         else:
             QApplication.restoreOverrideCursor()
             self.buildButton.setFocus()
@@ -255,9 +241,8 @@ class Form(QMainWindow):
 
 
     def _build(self, path):
-        settings = QSettings('afsc.noaa.gov','makepyqt5')
-        pyuic5 = settings.value("pyuic5", PYUIC5)
-        pyrcc5 = settings.value("pyrcc5", PYRCC5)
+        settings = QSettings('afsc.noaa.gov','makepySide6')
+        pyuic6 = settings.value("pyuic6", PYUIC6)
         prefix = self.pathLabel.text()
         if not prefix.endswith(os.sep):
             prefix += os.sep
@@ -269,11 +254,7 @@ class Form(QMainWindow):
             if source.endswith(".ui"):
                 target = os.path.join(path,
                                     "ui_" + name.replace(".ui", ".py"))
-                command = pyuic5
-            elif source.endswith(".qrc"):
-                target = os.path.join(path,
-                                    "qrc_" + name.replace(".qrc", ".py"))
-                command = pyrcc5
+                command = pyuic6
             if target is not None:
                 if not os.access(target, os.F_OK) or (
                    os.stat(source)[stat.ST_MTIME] > \
@@ -297,7 +278,7 @@ class Form(QMainWindow):
                             source.replace(prefix, ""))
                 QApplication.processEvents()
         if failed:
-            QMessageBox.information(self, "Make PyQt - Failures",
+            QMessageBox.information(self, "Make PySide6 - Failures",
                     "Try manually setting the paths to the tools "
                     "using <b>More-&gt;Tool paths</b>")
 
@@ -358,13 +339,13 @@ class Form(QMainWindow):
         if not tsfiles:
             return
         settings = QSettings()
-        pylupdate5 = settings.value("pylupdate5", PYLUPDATE5)
+        pylupdate6 = settings.value("pylupdate6", PYLUPDATE6)
         lrelease = settings.value("lrelease", LRELEASE)
         process = QProcess()
         failed = 0
         for ts in tsfiles:
             qm = ts[:-3] + ".qm"
-            command1 = pylupdate5
+            command1 = pylupdate6
             args1 = files + ["-ts", ts]
             command2 = lrelease
             args2 = ["-silent", ts, "-qm", qm]
@@ -390,24 +371,22 @@ class Form(QMainWindow):
             self.logBrowser.append(msg)
             QApplication.processEvents()
         if failed:
-            QMessageBox.information(self, "Make PyQt - Failures",
+            QMessageBox.information(self, "Make PySide6 - Failures",
                     "Try manually setting the paths to the tools "
                     "using <b>More-&gt;Tool paths</b>")
 
 
 app = QApplication(sys.argv)
 PATH = app.applicationDirPath()
-PYUIC5 = os.path.join(PATH, "pyuic5")
-PYRCC5 = os.path.join(PATH, "pyrcc5")
-PYLUPDATE5 = os.path.join(PATH, "pylupdate5")
+PYUIC6 = os.path.join(PATH, "pyuic6")
+PYLUPDATE6 = os.path.join(PATH, "pylupdate6")
 LRELEASE = "lrelease"
 if platform.system() == "Windows":
-    PYUIC5 = PYUIC5.replace("/", "\\") + ".bat"
-    PYRCC5 = PYRCC5.replace("/", "\\") + ".exe"
-    PYLUPDATE5 = PYLUPDATE5.replace("/", "\\") + ".exe"
+    PYUIC6 = PYUIC6.replace("/", "\\") + ".bat"
+    PYLUPDATE6 = PYLUPDATE6.replace("/", "\\") + ".exe"
 app.setApplicationName("Make PyQt")
 form = Form()
 form.show()
-app.exec_()
+app.exec()
 
 

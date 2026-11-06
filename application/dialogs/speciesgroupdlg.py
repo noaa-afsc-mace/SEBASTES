@@ -1,7 +1,7 @@
 
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PySide6.QtCore  import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 from dialogs.ui import  ui_SpeciesGroupDlg
 
 class SpeciesGroupDlg(QDialog, ui_SpeciesGroupDlg.Ui_speciesGroupDlg):
@@ -15,10 +15,10 @@ class SpeciesGroupDlg(QDialog, ui_SpeciesGroupDlg.Ui_speciesGroupDlg):
         self.listWidget.clear()
         self.listWidget.addItems(spcList)
 
-    @pyqtSlot()
+    @Slot()
     def cancel(self):
         self.reject()
         
-    @pyqtSlot()
+    @Slot()
     def exit(self):
         self.accept()

@@ -21,10 +21,10 @@ Public Properties
 
  defaultCursor - Set this to the cursor that will be active when the pointer
                  is in the widget. The widget will automatically change the
-                 cursor to Qt.ArrowCursor when the pointer moves out of the
+                 cursor to Qt.CursorShape.ArrowCursor when the pointer moves out of the
                  widget.
 
-                 Default = Qt.CrossCursor
+                 Default = Qt.CursorShape.CrossCursor
 
 
     zoomFactor - set this to the zoom factor applied to each mouse
@@ -63,7 +63,7 @@ Public Properties
                  requirements you can disable this feature and handle this in
                  your application.
 
-                 Default = Qt.Key_Alt (Alt key)
+                 Default = Qt.Key.Key_Alt (Alt key)
 
 
  rubberBandKey - Set this to the Qt Key Constant representing the keyboard key
@@ -78,14 +78,14 @@ Public Properties
                  and mouseReleaseEvent signals and calling startRubberBand and
                  endRubberBand yourself in your mouse event handlers.
 
-                 Default = Qt.Key_Shift (Shift key)
+                 Default = Qt.Key.Key_Shift (Shift key)
 
 
   selectAddKey - Set this to the Qt Key Constant representing the keyboard key
                  that will be used as the modifier to enable adding items to the current
                  set of selected items.
 
-                 Default = Qt.Key_Control  (Control key)
+                 Default = Qt.Key.Key_Control  (Control key)
 
 Public Methods
 
@@ -112,17 +112,17 @@ rick.towler@noaa.gov
 """
 
 import os
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtOpenGL import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtOpenGL import *
 from .QViewerBase import QViewerBase
 from .QEnhancedImage import QEnhancedImage
-from .imageAdjustmentsDlg_simple import imageAdjustmentsDlg_simple
+from .imageAdjustmentsDlg import imageAdjustmentsDlg
 
 class QImageViewer(QViewerBase):
 
-    imageUpdate = pyqtSignal()
+    imageUpdate = Signal()
 
     def __init__(self, parent=None, useGL=False, backgroundColor=[50,50,50],
             maxQueued=3):
@@ -139,7 +139,7 @@ class QImageViewer(QViewerBase):
         self.imageUpdate.connect(self.image.updateImage)
 
         #   Create the dialog that allows the user to adjust image settings
-        self.adjustmentDialog = imageAdjustmentsDlg_simple()
+        self.adjustmentDialog = imageAdjustmentsDlg()
         try:
             self.adjustmentDialog.setWindowIcon(QIcon('resources' + os.sep + 'equalizer.png'))
         except:
@@ -154,7 +154,7 @@ class QImageViewer(QViewerBase):
         """
         enableContextMenu enables the QImageViewer custom context menu
         """
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested[QPoint].connect(self.showContextMenu)
 
 
@@ -162,7 +162,7 @@ class QImageViewer(QViewerBase):
         """
         disableContextMenu disables the QImageViewer custom context menu
         """
-        self.setContextMenuPolicy(Qt.NoContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.customContextMenuRequested[QPoint].disconnect(self.showContextMenu)
 
 
@@ -233,7 +233,7 @@ class QImageViewer(QViewerBase):
         action = QAction('Adjust image properties...', self)
         action.triggered.connect(self.showAdjustmentsDialog)
         menu.addAction(action)
-        menu.exec_(self.mapToGlobal(pos));
+        menu.exec(self.mapToGlobal(pos));
 
 
     def showAdjustmentsDialog(self):
